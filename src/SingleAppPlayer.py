@@ -33,7 +33,7 @@ class SingleAppPlayer(Gtk.Box):
     def __init__(self, service_name: str):
         self.album_cover_height: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
 
-        Gtk.Box.__init__(self, spacing=10)
+        Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
 
         self.dbus_player = MprisWrapper(self.service_name)
@@ -61,57 +61,47 @@ class SingleAppPlayer(Gtk.Box):
         song_text_event_box.add(self.song_text)
         song_text_event_box.connect("button-press-event", self.song_clicked)
 
-        # play_pause_icon
-        self.play_pause_icon = Gtk.Image()
+        # control buttons
+        play_pause_icon = Gtk.Image()
         if (
             self.dbus_player.get_player_property("PlaybackStatus").get_string()
             == "Playing"
         ):
-            self.play_pause_icon.set_from_icon_name(
-                "media-playback-pause-symbolic", Gtk.IconSize.MENU
+            self.play_pause_button = self._init_button(
+                "media-playback-pause-symbolic", self.play_paused_clicked
             )
+
         else:
-            self.play_pause_icon.set_from_icon_name(
-                "media-playback-start-symbolic", Gtk.IconSize.MENU
+            self.play_pause_button = self._init_button(
+                "media-playback-start-symbolic", self.play_paused_clicked
             )
-        play_pause_event_box = Gtk.EventBox()
-        play_pause_event_box.add(self.play_pause_icon)
-        play_pause_event_box.connect("button-press-event", self.play_paused_clicked)
 
-        # backward_icon
-        self.backward_icon = Gtk.Image.new_from_icon_name(
-            "media-skip-backward-symbolic", Gtk.IconSize.MENU
+        self.backward_button = self._init_button(
+            "media-skip-backward-symbolic", self.backward_clicked
         )
-        backward_icon_event_box = Gtk.EventBox()
-        backward_icon_event_box.add(self.backward_icon)
-        backward_icon_event_box.connect("button-press-event", self.backward_clicked)
-
-        # forward_icon
-        self.forward_icon = Gtk.Image.new_from_icon_name(
-            "media-skip-forward-symbolic", Gtk.IconSize.MENU
+        self.forward_button = self._init_button(
+            "media-skip-forward-symbolic", self.forward_clicked
         )
-        forward_icon_event_box = Gtk.EventBox()
-        forward_icon_event_box.add(self.forward_icon)
-        forward_icon_event_box.connect("button-press-event", self.forward_clicked)
 
         # add all widgets
-        self.pack_start(album_cover_event_box, False, False, 0)
-        self.pack_start(song_text_event_box, True, True, 0)
-        self.pack_end(forward_icon_event_box, False, False, 0)
-        self.pack_end(play_pause_event_box, False, False, 0)
-        self.pack_end(backward_icon_event_box, False, False, 0)
+        self.pack_start(album_cover_event_box, False, False, 5)
+        self.pack_start(song_text_event_box, True, True, 5)
+        self.pack_end(self.forward_button, False, False, 0)
+        self.pack_end(self.play_pause_button, False, False, 0)
+        self.pack_end(self.backward_button, False, False, 0)
 
         self.show_all()
 
     def playing_changed(self, status: GLib.Variant):
         if status.get_string() == "Playing":
-            self.play_pause_icon.set_from_icon_name(
+            play_pause_icon = Gtk.Image.new_from_icon_name(
                 "media-playback-pause-symbolic", Gtk.IconSize.MENU
             )
         elif status.get_string() == "Paused":
-            self.play_pause_icon.set_from_icon_name(
+            play_pause_icon = Gtk.Image.new_from_icon_name(
                 "media-playback-start-symbolic", Gtk.IconSize.MENU
             )
+        self.play_pause_button.set_image(play_pause_icon)
 
     def metadata_changed(self, metadata: GLib.Variant):
         self._set_song_label(
@@ -131,6 +121,14 @@ class SingleAppPlayer(Gtk.Box):
 
     def song_clicked(self, *args):
         self.dbus_player.call_app_method("Raise")
+
+    def _init_button(self, icon_name: str, on_pressed: callable, icon_size: Gtk.IconSize = Gtk.IconSize.MENU) -> Gtk.Button:
+        icon = Gtk.Image.new_from_icon_name(icon_name, icon_size)
+        button = Gtk.Button()
+        button.set_image(icon)
+        button.set_relief(Gtk.ReliefStyle.NONE)
+        button.connect("button-press-event", on_pressed)
+        return button
 
     def _set_song_label(self, author, title):
         if author is None:
