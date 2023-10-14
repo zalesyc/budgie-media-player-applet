@@ -36,7 +36,6 @@ class SingleAppPlayer(Gtk.Box):
     def __init__(self, service_name: str):
         self.album_cover_height: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         
-
         Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
 
@@ -59,7 +58,7 @@ class SingleAppPlayer(Gtk.Box):
         self.song_text = Gtk.Label()
         self._set_song_label(
             start_song_metadata.lookup_value("xesam:artist", None),
-            start_song_metadata.lookup_value("xesam:title", None),
+            start_song_metadata.lookup_value("xesam:title", None)
         )
         song_text_event_box = Gtk.EventBox()
         song_text_event_box.add(self.song_text)
@@ -97,6 +96,10 @@ class SingleAppPlayer(Gtk.Box):
         self.pack_end(self.backward_button, False, False, 0)
 
         self.show_all()
+     
+    def reset_song_label(self) -> None:
+        metadata = self.dbus_player.get_player_property("Metadata")
+        self._set_song_label(metadata.lookup_value("xesam:artist", None), metadata.lookup_value("xesam:title", None))
 
     def playing_changed(self, status: GLib.Variant):
         if status.get_string() == "Playing":
