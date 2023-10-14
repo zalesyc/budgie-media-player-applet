@@ -9,7 +9,6 @@ There is a file: src/testWin.py that is not used when installing the applet, but
 ## Issues 
 - Works only on horizontal panels
 - Minimal supported panel size is 32px
-- No maximum length of the text
 
 ## Requirements
 - budgie-1.0 
@@ -18,10 +17,16 @@ There is a file: src/testWin.py that is not used when installing the applet, but
 - python3-pil / python3-pillow
 
 ## Build 
-Only for current user (No root privilegies needed)
+### Ubuntu Budgie
 ~~~ shell
-meson setup build --prefix=~/.local --libdir=share
+meson setup build --libdir=/usr/lib
 
-cd build && ninja install
+cd build && sudo ninja install
+~~~
+### Fedora
+~~~ shell
+meson setup build --libdir=/usr/lib64
+
+cd build && sudo ninja install
 ~~~
 
