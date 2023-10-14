@@ -47,7 +47,9 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popover_box.set_margin_end(5)
         self.popover.add(self.popover_box)
 
-        self.settings = Gio.Settings.new("com.github.zalesyc.budgie-media-player-applet")
+        self.settings = Gio.Settings.new(
+            "com.github.zalesyc.budgie-media-player-applet"
+        )
         SingleAppPlayer.author_max_len = self.settings.get_int("author-name-max-length")
         SingleAppPlayer.name_max_len = self.settings.get_int("media-title-max-length")
         self.settings.connect("changed", self.settings_changed)
@@ -125,16 +127,14 @@ class BudgieMediaPlayer(Budgie.Applet):
 
             if len(self.players_list) < 2:
                 self.popup_icon.hide()
-    
+
     def settings_changed(self, settings, key):
         if key == "author-name-max-length" or key == "media-title-max-length":
             if key == "author-name-max-length":
                 SingleAppPlayer.author_max_len = self.settings.get_int(key)
             else:
                 SingleAppPlayer.name_max_len = self.settings.get_int(key)
-            
+
             for appPlayer in self.players_list:
                 appPlayer.reset_song_label()
             return
-        
-        
