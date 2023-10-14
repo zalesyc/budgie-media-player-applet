@@ -30,6 +30,9 @@ from mprisWrapper import MprisWrapper
 
 
 class SingleAppPlayer(Gtk.Box):
+    author_max_len = 30
+    name_max_len = 50
+
     def __init__(self, service_name: str):
         self.album_cover_height: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         
@@ -154,33 +157,28 @@ class SingleAppPlayer(Gtk.Box):
         button.connect("button-press-event", on_pressed)
         return button
 
-    def _set_song_label(self, author, title):
-        if author is None:
-            author = ""
-        else:
-            author = author.unpack()
-            if len(author) == 0:
-                author = ""
-            else:
-                author = author[0]
-
-        if title is None:
-            title = ""
-        else:
+    def _set_song_label(self, author: GLib.Variant, title: GLib.Variant):
+        splitter = " - "
+        if title is not None:
             title = title.unpack()
 
-        if title == "":
-            if author == "":
-                song_text = "Unknown"
+            if author is not None:
+                author = ", ".join(author.unpack())
+            
             else:
-                song_text = f"{author} - Unknown"
+                splitter = ""
+                author = ""
+        
         else:
-            if author == "":
-                song_text = f"{title}"
+            title = "Unknown"
+            if author is not None:
+                author = ", ".join(author.unpack())
+            
             else:
-                song_text = f"{author} - {title}"
+                splitter = ""
+                author = ""
 
-        self.song_text.set_label(song_text)
+        self.song_text.set_label(f"{author}{splitter}{title}")        
 
     def _set_album_cover(self, art_url):
         if art_url is None:
