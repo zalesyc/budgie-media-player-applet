@@ -15,18 +15,29 @@ There is a file: src/testWin.py that is not used when installing the applet, but
 - gtk+-3.0
 - python3
 - python3-pil / python3-pillow
+- meson
+- ninja
+- git
 
 ## Build 
-### Ubuntu Budgie
+### Download the repository
+~~~ shell
+git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie-media-player-applet
+~~~
+
+### Build the applet
+**Ubuntu Budgie**
 ~~~ shell
 meson setup build --libdir=/usr/lib
-
-cd build && sudo ninja install
 ~~~
-### Fedora
+
+**Fedora**
 ~~~ shell
 meson setup build --libdir=/usr/lib64
+~~~
 
+### Install the applet
+~~~ shell
 cd build && sudo ninja install
 ~~~
 
