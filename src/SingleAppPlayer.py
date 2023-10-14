@@ -14,10 +14,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from io import BytesIO
 from urllib.parse import urlparse
 import requests
 from PIL import Image
-from io import BytesIO
 
 import gi
 
@@ -30,9 +30,11 @@ from mprisWrapper import MprisWrapper
 
 
 class SingleAppPlayer(Gtk.Box):
+    author_max_len = 30
+    name_max_len = 40
+
     def __init__(self, service_name: str):
         self.album_cover_height: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
-        
 
         Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
@@ -64,26 +66,43 @@ class SingleAppPlayer(Gtk.Box):
 
         # control buttons
         play_pause_icon = Gtk.Image()
-        self.can_play: bool = self.dbus_player.get_player_property("CanPlay").get_boolean()
-        self.can_pause: bool = self.dbus_player.get_player_property("CanPause").get_boolean()
-        if (self.dbus_player.get_player_property("PlaybackStatus").get_string() == "Playing"):
+        self.can_play: bool = self.dbus_player.get_player_property(
+            "CanPlay"
+        ).get_boolean()
+        self.can_pause: bool = self.dbus_player.get_player_property(
+            "CanPause"
+        ).get_boolean()
+        if (
+            self.dbus_player.get_player_property("PlaybackStatus").get_string()
+            == "Playing"
+        ):
             self.play_pause_button = self._init_button(
-                "media-playback-pause-symbolic", self.play_paused_clicked,
-                enabled=(self.can_pause or self.can_play)
+                "media-playback-pause-symbolic",
+                self.play_paused_clicked,
+                enabled=(self.can_pause or self.can_play),
             )
 
         else:
             self.play_pause_button = self._init_button(
-                "media-playback-start-symbolic", self.play_paused_clicked, 
-                enabled=(self.can_pause or self.can_play)
+                "media-playback-start-symbolic",
+                self.play_paused_clicked,
+                enabled=(self.can_pause or self.can_play),
             )
         self.dbus_player.player_connect("CanPlay", self.can_play_changed)
         self.dbus_player.player_connect("CanPause", self.can_pause_changed)
-     
-        self.backward_button = self._init_button("media-skip-backward-symbolic", self.backward_clicked, enabled=self.dbus_player.get_player_property("CanGoPrevious").get_boolean())
+
+        self.backward_button = self._init_button(
+            "media-skip-backward-symbolic",
+            self.backward_clicked,
+            enabled=self.dbus_player.get_player_property("CanGoPrevious").get_boolean(),
+        )
         self.dbus_player.player_connect("CanGoPrevious", self.can_go_previous_changed)
 
-        self.forward_button = self._init_button("media-skip-forward-symbolic", self.forward_clicked, enabled=self.dbus_player.get_player_property("CanGoNext").get_boolean())
+        self.forward_button = self._init_button(
+            "media-skip-forward-symbolic",
+            self.forward_clicked,
+            enabled=self.dbus_player.get_player_property("CanGoNext").get_boolean(),
+        )
         self.dbus_player.player_connect("CanGoNext", self.can_go_next_changed)
 
         # add all widgets
@@ -95,13 +114,20 @@ class SingleAppPlayer(Gtk.Box):
 
         self.show_all()
 
+    def reset_song_label(self) -> None:
+        metadata = self.dbus_player.get_player_property("Metadata")
+        self._set_song_label(
+            metadata.lookup_value("xesam:artist", None),
+            metadata.lookup_value("xesam:title", None),
+        )
+
     def playing_changed(self, status: GLib.Variant):
         if status.get_string() == "Playing":
             play_pause_icon = Gtk.Image.new_from_icon_name(
                 "media-playback-pause-symbolic", Gtk.IconSize.MENU
             )
             self.play_pause_button.set_image(play_pause_icon)
-            
+
         elif status.get_string() == "Paused":
             play_pause_icon = Gtk.Image.new_from_icon_name(
                 "media-playback-start-symbolic", Gtk.IconSize.MENU
@@ -114,23 +140,20 @@ class SingleAppPlayer(Gtk.Box):
             metadata.lookup_value("xesam:title", None),
         )
         self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
-    
+
     def can_play_changed(self, metadata: GLib.Variant):
-            self.can_play = metadata.get_boolean()
-            self.backward_button.set_sensitive(self.can_play or self.can_pause)
+        self.can_play = metadata.get_boolean()
+        self.backward_button.set_sensitive(self.can_play or self.can_pause)
 
     def can_pause_changed(self, metadata: GLib.Variant):
         self.can_pause = metadata.get_boolean()
         self.backward_button.set_sensitive(self.can_play or self.can_pause)
 
     def can_go_previous_changed(self, metadata: GLib.Variant):
-            self.backward_button.set_sensitive(metadata.get_boolean())
+        self.backward_button.set_sensitive(metadata.get_boolean())
 
-    def can_go_previous_changed(self, metadata: GLib.Variant):
-            self.backward_button.set_sensitive(metadata.get_boolean())
-    
     def can_go_next_changed(self, metadata: GLib.Variant):
-            self.forward_button.set_sensitive(metadata.get_boolean())
+        self.forward_button.set_sensitive(metadata.get_boolean())
 
     def play_paused_clicked(self, *args):
         self.dbus_player.call_player_method("PlayPause")
@@ -143,9 +166,14 @@ class SingleAppPlayer(Gtk.Box):
 
     def song_clicked(self, *args):
         self.dbus_player.call_app_method("Raise")
-      
 
-    def _init_button(self, icon_name: str, on_pressed: callable, icon_size: Gtk.IconSize = Gtk.IconSize.MENU, enabled: bool = True) -> Gtk.Button:
+    def _init_button(
+        self,
+        icon_name: str,
+        on_pressed: callable,
+        icon_size: Gtk.IconSize = Gtk.IconSize.MENU,
+        enabled: bool = True,
+    ) -> Gtk.Button:
         icon = Gtk.Image.new_from_icon_name(icon_name, icon_size)
         button = Gtk.Button()
         button.set_image(icon)
@@ -154,33 +182,38 @@ class SingleAppPlayer(Gtk.Box):
         button.connect("button-press-event", on_pressed)
         return button
 
-    def _set_song_label(self, author, title):
-        if author is None:
-            author = ""
-        else:
-            author = author.unpack()
-            if len(author) == 0:
-                author = ""
-            else:
-                author = author[0]
-
-        if title is None:
-            title = ""
-        else:
+    def _set_song_label(self, author: GLib.Variant, title: GLib.Variant):
+        splitter = " - "
+        if title is not None:
             title = title.unpack()
 
-        if title == "":
-            if author == "":
-                song_text = "Unknown"
-            else:
-                song_text = f"{author} - Unknown"
-        else:
-            if author == "":
-                song_text = f"{title}"
-            else:
-                song_text = f"{author} - {title}"
+            if author is not None:
+                author = ", ".join(author.unpack())
 
-        self.song_text.set_label(song_text)
+            else:
+                splitter = ""
+                author = ""
+
+        else:
+            title = "Unknown"
+            if author is not None:
+                author = ", ".join(author.unpack())
+
+            else:
+                splitter = ""
+                author = ""
+
+        self.song_text.set_label(
+            "{}{}{}".format(
+                (author[: self.author_max_len - 3] + "...")
+                if len(author) > self.author_max_len
+                else author,
+                splitter,
+                (title[: self.name_max_len - 3] + "...")
+                if len(title) > self.name_max_len
+                else title,
+            )
+        )
 
     def _set_album_cover(self, art_url):
         if art_url is None:

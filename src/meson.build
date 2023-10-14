@@ -3,5 +3,5 @@ install_data(
     'SingleAppPlayer.py',
     'BudgieMediaPlayer.py',
     'mprisWrapper.py',
-    install_dir: plugins_install_dir
+    install_dir: PLUGINS_INSTALL_DIR
 )
