@@ -221,7 +221,7 @@ class SingleAppPlayer(Gtk.Box):
                 return
 
         self.album_cover.set_from_icon_name(
-            "applications-community-symbolic", Gtk.IconSize.MENU
+            "multimedia-player-symbolic", Gtk.IconSize.MENU
         )
 
     def _set_album_cover_https(self, url):
