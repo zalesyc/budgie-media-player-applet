@@ -16,17 +16,25 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import sys
 import gi.repository
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, Gio
 from BudgieMediaPlayer import BudgieMediaPlayer
+from SettingsPage import SettingsPage
 
 
 class MyWindow(Gtk.Window):
     def __init__(self):
-        super().__init__(title="MediaPlayerTestWin")
-        self.mp = BudgieMediaPlayer(0)
+        if len(sys.argv) > 1 and sys.argv[1] == "-s":
+            super().__init__(title="MediaPlayerSettingsTestWin")
+            self.mp = SettingsPage(
+                Gio.Settings.new("com.github.zalesyc.budgie-media-player-applet")
+            )
+        else:
+            super().__init__(title="MediaPlayerTestWin")
+            self.mp = BudgieMediaPlayer(0)
         self.add(self.mp)
 
 

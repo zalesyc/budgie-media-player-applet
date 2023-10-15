@@ -22,11 +22,13 @@ gi.require_version("Budgie", "1.0")
 from gi.repository import Gtk, Gio, GLib, Budgie
 
 from SingleAppPlayer import SingleAppPlayer
+from SettingsPage import SettingsPage
 
 
 class BudgieMediaPlayer(Budgie.Applet):
     def __init__(self, uuid):
         Budgie.Applet.__init__(self)
+        self.uuid = uuid
         self.box = Gtk.Box(spacing=10)
         self.add(self.box)
 
@@ -138,3 +140,12 @@ class BudgieMediaPlayer(Budgie.Applet):
             for appPlayer in self.players_list:
                 appPlayer.reset_song_label()
             return
+
+    def do_get_settings_ui(self):
+        """Return the applet settings with given uuid"""
+        return SettingsPage(self.settings)
+
+    def do_supports_settings(self):
+        """Return True if support setting through Budgie Setting,
+        False otherwise."""
+        return True
