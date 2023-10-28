@@ -143,11 +143,11 @@ class SingleAppPlayer(Gtk.Box):
 
     def can_play_changed(self, metadata: GLib.Variant):
         self.can_play = metadata.get_boolean()
-        self.backward_button.set_sensitive(self.can_play or self.can_pause)
+        self.play_pause_button.set_sensitive(self.can_play or self.can_pause)
 
     def can_pause_changed(self, metadata: GLib.Variant):
         self.can_pause = metadata.get_boolean()
-        self.backward_button.set_sensitive(self.can_play or self.can_pause)
+        self.play_pause_button.set_sensitive(self.can_play or self.can_pause)
 
     def can_go_previous_changed(self, metadata: GLib.Variant):
         self.backward_button.set_sensitive(metadata.get_boolean())
@@ -184,24 +184,25 @@ class SingleAppPlayer(Gtk.Box):
 
     def _set_song_label(self, author: GLib.Variant, title: GLib.Variant):
         splitter = " - "
-        if title is not None:
-            title = title.unpack()
-
-            if author is not None:
-                author = ", ".join(author.unpack())
-
-            else:
+        if title is None or (not title.unpack()):
+            title = "Unknown"
+            if author is None or author.unpack() == [""]:
                 splitter = ""
                 author = ""
+
+            else:
+                author = ", ".join(author.unpack())
 
         else:
-            title = "Unknown"
-            if author is not None:
-                author = ", ".join(author.unpack())
-
-            else:
+            title = title.unpack()
+            if author is None or (not ", ".join(author.unpack())):
                 splitter = ""
                 author = ""
+
+            else:
+                author = ", ".join(author.unpack())
+
+           
 
         self.song_text.set_label(
             "{}{}{}".format(
