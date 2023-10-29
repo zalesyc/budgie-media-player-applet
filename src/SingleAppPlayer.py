@@ -33,8 +33,9 @@ class SingleAppPlayer(Gtk.Box):
     author_max_len = 30
     name_max_len = 40
 
-    def __init__(self, service_name: str):
+    def __init__(self, service_name: str, orientation: Gtk.Orientation):
         self.album_cover_height: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
+        self.orientation: Gtk.Orientation = orientation
 
         Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
@@ -105,6 +106,8 @@ class SingleAppPlayer(Gtk.Box):
         )
         self.dbus_player.player_connect("CanGoNext", self.can_go_next_changed)
 
+        self.set_orientation(orientation)
+
         # add all widgets
         self.pack_start(album_cover_event_box, False, False, 5)
         self.pack_start(song_text_event_box, True, True, 5)
@@ -113,6 +116,13 @@ class SingleAppPlayer(Gtk.Box):
         self.pack_end(self.backward_button, False, False, 0)
 
         self.show_all()
+
+    def set_orientation(self, orientation: Gtk.Orientation) -> None:
+        self.orientation = orientation
+        self.song_text.set_angle(
+            0 if orientation == Gtk.Orientation.HORIZONTAL else 270
+        )
+        super().set_orientation(orientation)
 
     def reset_song_label(self) -> None:
         metadata = self.dbus_player.get_player_property("Metadata")
@@ -201,8 +211,6 @@ class SingleAppPlayer(Gtk.Box):
 
             else:
                 author = ", ".join(author.unpack())
-
-           
 
         self.song_text.set_label(
             "{}{}{}".format(

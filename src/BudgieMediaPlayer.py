@@ -29,6 +29,7 @@ class BudgieMediaPlayer(Budgie.Applet):
     def __init__(self, uuid):
         Budgie.Applet.__init__(self)
         self.uuid = uuid
+        self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
         self.box = Gtk.Box(spacing=10)
         self.add(self.box)
 
@@ -71,7 +72,7 @@ class BudgieMediaPlayer(Budgie.Applet):
 
         self.players_list: [SingleAppPlayer] = []
         for dbus_name in dbus_names:
-            self.players_list.append(SingleAppPlayer(dbus_name))
+            self.players_list.append(SingleAppPlayer(dbus_name, self.orientation))
             if len(self.players_list) < 2:
                 self.box.pack_start(self.players_list[-1], False, False, 0)
             else:
@@ -100,11 +101,10 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         return [x for x in names[0] if x.startswith(self.dbus_namespace_name)]
 
-    def dbus_players_changed(
-        self, a, b, c, d, e, changes
-    ):  # args a-e are arguments i dont need, but get sent by gtk
+    def dbus_players_changed(self, a, b, c, d, e, changes):
+        # args a-e are arguments i dont need, but get sent by gtk
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
-            self.players_list.append(SingleAppPlayer(changes[0]))
+            self.players_list.append(SingleAppPlayer(changes[0], self.orientation))
             if len(self.players_list) < 2:
                 self.box.pack_start(self.players_list[-1], False, False, 0)
 
@@ -139,7 +139,19 @@ class BudgieMediaPlayer(Budgie.Applet):
 
             for appPlayer in self.players_list:
                 appPlayer.reset_song_label()
-            return
+
+    def do_panel_position_changed(self, position: Budgie.PanelPosition):
+        if (
+            position == Budgie.PanelPosition.LEFT
+            or position == Budgie.PanelPosition.RIGHT
+        ):
+            self.orientation = Gtk.Orientation.VERTICAL
+        else:
+            self.orientation = Gtk.Orientation.HORIZONTAL
+
+        self.box.set_orientation(self.orientation)
+        for player in self.players_list:
+            player.set_orientation(self.orientation)
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""
