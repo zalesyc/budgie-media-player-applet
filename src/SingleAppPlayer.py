@@ -34,7 +34,7 @@ class SingleAppPlayer(Gtk.Box):
     name_max_len = 40
 
     def __init__(self, service_name: str, orientation: Gtk.Orientation):
-        self.album_cover_height: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
+        self.album_cover_max_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2] 
         self.orientation: Gtk.Orientation = orientation
 
         Gtk.Box.__init__(self, spacing=0)
@@ -122,6 +122,9 @@ class SingleAppPlayer(Gtk.Box):
         self.song_text.set_angle(
             0 if orientation == Gtk.Orientation.HORIZONTAL else 270
         )
+        metadataProperty = self.dbus_player.get_player_property("Metadata")
+        if metadataProperty is not None:
+            self._set_album_cover(metadataProperty.lookup_value("mpris:artUrl", None))
         super().set_orientation(orientation)
 
     def reset_song_label(self) -> None:
@@ -231,20 +234,27 @@ class SingleAppPlayer(Gtk.Box):
 
         url = art_url.get_string()
         parsed_url = urlparse(url)
+        
         if parsed_url.scheme == "file":
             try:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                    parsed_url.path, -1, self.album_cover_height, True
-                )
+                if self.orientation == Gtk.Orientation.HORIZONTAL:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                        parsed_url.path, -1, self.album_cover_max_size, True
+                    )
+                else:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                        parsed_url.path, self.album_cover_max_size, -1, True
+                    )                    
                 self.album_cover.set_from_pixbuf(pixbuf)
             except gi.repository.GLib.GError:
                 self._set_album_cover_other()
+            return
 
-        elif parsed_url.scheme == "https":
+        if parsed_url.scheme == "https":
             self._set_album_cover_https(url)
+            return
 
-        else:
-            self._set_album_cover_other()
+        self._set_album_cover_other()
 
     def _set_album_cover_other(self):
         desktop_file_name = self.dbus_player.get_app_property("DesktopEntry")
@@ -269,20 +279,29 @@ class SingleAppPlayer(Gtk.Box):
     def _set_album_cover_https(self, url):
         pixbuf = self._stream_image_to_gdkpixbuf(url)
 
-        if pixbuf:
+        if not pixbuf:
+            self._set_album_cover_other()
+            return
+
+        # calculating width/height based on height/width to have the same proportions
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
             self.album_cover.set_from_pixbuf(
-                pixbuf.scale_simple(
-                    int(
-                        (self.album_cover_height / pixbuf.get_height())
-                        * pixbuf.get_width()
-                    ),  # calculating width based on height to have the same proportions
-                    self.album_cover_height,
-                    GdkPixbuf.InterpType.NEAREST,
+                pixbuf.scale_simple(  
+                    int((self.album_cover_max_size / pixbuf.get_height()) * pixbuf.get_width()), 
+                    self.album_cover_max_size,
+                    GdkPixbuf.InterpType.NEAREST
                 )
             )
-        else:
-            self._set_album_cover_other()
-
+            return
+        
+        self.album_cover.set_from_pixbuf(
+            pixbuf.scale_simple(
+                self.album_cover_max_size,
+                int((self.album_cover_max_size / pixbuf.get_width()) * pixbuf.get_height()), 
+                GdkPixbuf.InterpType.NEAREST
+            )
+        )
+    
     def _stream_image_to_gdkpixbuf(self, url):
         try:
             # Send a GET request to the URL
