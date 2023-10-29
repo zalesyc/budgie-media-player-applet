@@ -43,7 +43,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popover_manager = Budgie.PopoverManager()
         self.popover_manager.register_popover(self, self.popover)
 
-        self.popover_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 10)
+        self.popover_box = Gtk.Box.new(not self.orientation, 10)
         self.popover_box.set_margin_bottom(5)
         self.popover_box.set_margin_top(5)
         self.popover_box.set_margin_start(5)
@@ -150,6 +150,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             self.orientation = Gtk.Orientation.HORIZONTAL
 
         self.box.set_orientation(self.orientation)
+        self.popover_box.set_orientation(not self.orientation)
         for player in self.players_list:
             player.set_orientation(self.orientation)
 
