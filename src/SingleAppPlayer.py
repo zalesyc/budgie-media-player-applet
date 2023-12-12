@@ -356,7 +356,7 @@ class SingleAppPlayer(Gtk.Box):
     def _stream_image_to_gdkpixbuf(self, url):
         try:
             # Send a GET request to the URL
-            response = requests.get(url, stream=True, Timeout=3)
+            response = requests.get(url, stream=True, timeout=4)
             if response.status_code != 200:
                 return None
 
