@@ -4,7 +4,7 @@ Applet for the budgie panel for controlling all of your playing media
 ![screenshot](screenshot.png)
 
 ## Developing
-There is a file: src/testWin.py that is not used when installing the applet, but it is used for debugging, as it creates the applet in a standalone window.
+There is a file: `src/testWin.py` that is not used when installing the applet, but it is used for debugging, as it creates the applet in a standalone window.
 If you pass -s as a commandline argument it will instead show the settings page.
 If you pass -v it will show the vertical representation of the applet.
 
@@ -32,7 +32,7 @@ git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie
 meson setup build --libdir=/usr/lib
 ~~~
 
-**Fedora**
+**Fedora, openSUSE**
 ~~~ shell
 meson setup build --libdir=/usr/lib64
 ~~~
