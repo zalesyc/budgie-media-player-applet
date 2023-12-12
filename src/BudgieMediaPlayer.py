@@ -28,6 +28,8 @@ from SettingsPage import SettingsPage
 class BudgieMediaPlayer(Budgie.Applet):
     def __init__(self, uuid):
         Budgie.Applet.__init__(self)
+        self.default_album_cover_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
+        self.album_cover_size = self.default_album_cover_size
         self.uuid = uuid
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
         self.box = Gtk.Box(spacing=10)
@@ -107,25 +109,29 @@ class BudgieMediaPlayer(Budgie.Applet):
             self.players_list.append(SingleAppPlayer(changes[0], self.orientation))
             if len(self.players_list) < 2:
                 self.box.pack_start(self.players_list[-1], False, False, 0)
+                self.players_list[-1].set_album_cover_size(self.album_cover_size)
 
             else:
                 self.popover_box.add(self.players_list[-1])
                 self.popup_icon.show()
 
         elif not changes[2]:  # player was removed
-            for player in enumerate(self.players_list):
-                if player[1].service_name == changes[0]:
-                    if player[0] == 0:
-                        self.box.remove(player[1])
-                        del self.players_list[player[0]]
+            for index, player in enumerate(self.players_list):
+                if player.service_name == changes[0]:
+                    if index == 0:
+                        self.box.remove(player)
+                        del self.players_list[index]
 
                         if len(self.players_list) > 0:
                             self.popover_box.remove(self.players_list[0])
                             self.box.pack_start(self.players_list[0], False, False, 0)
+                            self.players_list[0].set_album_cover_size(
+                                self.album_cover_size
+                            )
 
                     else:
-                        self.popover_box.remove(player[1])
-                        del self.players_list[player[0]]
+                        self.popover_box.remove(player)
+                        del self.players_list[index]
 
             if len(self.players_list) < 2:
                 self.popup_icon.hide()
