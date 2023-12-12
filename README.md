@@ -9,7 +9,6 @@ If you pass -s as a commandline argument it will instead show the settings page.
 If you pass -v it will show the vertical representation of the applet.
 
 ## Issues 
-- Minimal supported panel size is 32px
 - Settings apply to all instances of the applet instead of settings per applet
 
 ## Requirements

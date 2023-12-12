@@ -139,6 +139,10 @@ class BudgieMediaPlayer(Budgie.Applet):
 
             for appPlayer in self.players_list:
                 appPlayer.reset_song_label()
+    
+    def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):
+        if len(self.players_list) > 0:
+            self.players_list[0].set_album_cover_size(icon_size)
 
     def do_panel_position_changed(self, position: Budgie.PanelPosition):
         if (

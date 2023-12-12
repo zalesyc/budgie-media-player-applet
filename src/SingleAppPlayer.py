@@ -15,6 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from io import BytesIO
+from dataclasses import dataclass
 from urllib.parse import urlparse
 import requests
 from PIL import Image
@@ -28,13 +29,17 @@ from gi.repository import Gtk, Gio, GLib, GdkPixbuf
 
 from mprisWrapper import MprisWrapper
 
+@dataclass
+class AlbumCoverData():
+    image_url: str
+    song_cover: GdkPixbuf
 
 class SingleAppPlayer(Gtk.Box):
     author_max_len = 30
     name_max_len = 40
 
     def __init__(self, service_name: str, orientation: Gtk.Orientation):
-        self.album_cover_max_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2] 
+        self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2] 
         self.orientation: Gtk.Orientation = orientation
 
         Gtk.Box.__init__(self, spacing=0)
@@ -47,6 +52,7 @@ class SingleAppPlayer(Gtk.Box):
         start_song_metadata = self.dbus_player.get_player_property("Metadata")
 
         # album_cover
+        self.album_cover_data = AlbumCoverData(None, None)
         self.album_cover = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.MENU
         )
@@ -133,6 +139,30 @@ class SingleAppPlayer(Gtk.Box):
             metadata.lookup_value("xesam:artist", None),
             metadata.lookup_value("xesam:title", None),
         )
+    
+    def set_album_cover_size(self, size):
+        self.album_cover_size = size
+        if self.album_cover_data.song_cover is not None:
+            
+            pixbuf = self.album_cover_data.song_cover
+
+            if self.orientation == Gtk.Orientation.HORIZONTAL:
+                self.album_cover.set_from_pixbuf(
+                    pixbuf.scale_simple(  
+                        int((self.album_cover_size / pixbuf.get_height()) * pixbuf.get_width()), 
+                        self.album_cover_size,
+                        GdkPixbuf.InterpType.NEAREST
+                    )
+                )
+                return
+            
+            self.album_cover.set_from_pixbuf(
+                pixbuf.scale_simple(
+                    self.album_cover_size,
+                    int((self.album_cover_size / pixbuf.get_width()) * pixbuf.get_height()), 
+                    GdkPixbuf.InterpType.NEAREST
+                )
+            )
 
     def playing_changed(self, status: GLib.Variant):
         if status.get_string() == "Playing":
@@ -228,6 +258,11 @@ class SingleAppPlayer(Gtk.Box):
         )
 
     def _set_album_cover(self, art_url):
+        if self.album_cover_data.image_url == art_url:
+            return
+
+        self.album_cover_data.image_url = art_url
+
         if art_url is None:
             self._set_album_cover_other()
             return
@@ -236,18 +271,7 @@ class SingleAppPlayer(Gtk.Box):
         parsed_url = urlparse(url)
         
         if parsed_url.scheme == "file":
-            try:
-                if self.orientation == Gtk.Orientation.HORIZONTAL:
-                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                        parsed_url.path, -1, self.album_cover_max_size, True
-                    )
-                else:
-                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                        parsed_url.path, self.album_cover_max_size, -1, True
-                    )                    
-                self.album_cover.set_from_pixbuf(pixbuf)
-            except gi.repository.GLib.GError:
-                self._set_album_cover_other()
+            self._set_album_cover_file(parsed_url)
             return
 
         if parsed_url.scheme == "https":
@@ -258,6 +282,7 @@ class SingleAppPlayer(Gtk.Box):
 
     def _set_album_cover_other(self):
         desktop_file_name = self.dbus_player.get_app_property("DesktopEntry")
+        self.album_cover_data.song_cover = None
         if desktop_file_name is not None:
             desktop_file_name = desktop_file_name.get_string()
             try:
@@ -276,19 +301,36 @@ class SingleAppPlayer(Gtk.Box):
             "multimedia-player-symbolic", Gtk.IconSize.MENU
         )
 
+    def _set_album_cover_file(self, parsed_url):
+        try:
+            if self.orientation == Gtk.Orientation.HORIZONTAL:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    parsed_url.path, -1, self.album_cover_size, True
+                )
+            else:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    parsed_url.path, self.album_cover_size, -1, True
+                )                    
+            self.album_cover.set_from_pixbuf(pixbuf)
+            self.album_cover_data.song_cover = pixbuf
+        except gi.repository.GLib.GError:
+            self._set_album_cover_other() 
+
     def _set_album_cover_https(self, url):
         pixbuf = self._stream_image_to_gdkpixbuf(url)
 
         if not pixbuf:
             self._set_album_cover_other()
             return
+        
+        self.album_cover_data.song_cover = pixbuf
 
         # calculating width/height based on height/width to have the same proportions
         if self.orientation == Gtk.Orientation.HORIZONTAL:
             self.album_cover.set_from_pixbuf(
                 pixbuf.scale_simple(  
-                    int((self.album_cover_max_size / pixbuf.get_height()) * pixbuf.get_width()), 
-                    self.album_cover_max_size,
+                    int((self.album_cover_size / pixbuf.get_height()) * pixbuf.get_width()), 
+                    self.album_cover_size,
                     GdkPixbuf.InterpType.NEAREST
                 )
             )
@@ -296,8 +338,8 @@ class SingleAppPlayer(Gtk.Box):
         
         self.album_cover.set_from_pixbuf(
             pixbuf.scale_simple(
-                self.album_cover_max_size,
-                int((self.album_cover_max_size / pixbuf.get_width()) * pixbuf.get_height()), 
+                self.album_cover_size,
+                int((self.album_cover_size / pixbuf.get_width()) * pixbuf.get_height()), 
                 GdkPixbuf.InterpType.NEAREST
             )
         )
