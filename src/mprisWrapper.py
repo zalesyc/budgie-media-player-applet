@@ -14,11 +14,11 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Callable
 import gi
 
 gi.require_version("Gio", "2.0")
 from gi.repository import Gio, GLib
-from typing import Callable
 
 
 class MprisWrapper:
@@ -85,7 +85,7 @@ class MprisWrapper:
         )
 
     def _property_changed(self, proxy, parameters, *args):
-        for key in self._connected_functions.keys():
+        for key in self._connected_functions:
             property_value = parameters.lookup_value(key, None)
             if property_value is not None:
                 func = self._connected_functions.get(key)

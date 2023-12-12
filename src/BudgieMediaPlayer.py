@@ -131,24 +131,21 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.popup_icon.hide()
 
     def settings_changed(self, settings, key):
-        if key == "author-name-max-length" or key == "media-title-max-length":
+        if key in {"author-name-max-length", "media-title-max-length"}:
             if key == "author-name-max-length":
                 SingleAppPlayer.author_max_len = self.settings.get_int(key)
             else:
                 SingleAppPlayer.name_max_len = self.settings.get_int(key)
 
-            for appPlayer in self.players_list:
-                appPlayer.reset_song_label()
-    
+            for app_player in self.players_list:
+                app_player.reset_song_label()
+
     def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):
         if len(self.players_list) > 0:
             self.players_list[0].set_album_cover_size(icon_size)
 
     def do_panel_position_changed(self, position: Budgie.PanelPosition):
-        if (
-            position == Budgie.PanelPosition.LEFT
-            or position == Budgie.PanelPosition.RIGHT
-        ):
+        if position in {Budgie.PanelPosition.LEFT, Budgie.PanelPosition.RIGHT}:
             self.orientation = Gtk.Orientation.VERTICAL
         else:
             self.orientation = Gtk.Orientation.HORIZONTAL

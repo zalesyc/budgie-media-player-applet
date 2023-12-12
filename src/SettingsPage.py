@@ -36,7 +36,7 @@ class SettingsPage(Gtk.Grid):
 
         (
             self.name_max_len_label,
-            self.name_max_len_spin_button
+            self.name_max_len_spin_button,
         ) = self._combobox_label_init(
             "Media's title:",
             "Maximum length of the playing media's title (in characters)",
@@ -48,7 +48,7 @@ class SettingsPage(Gtk.Grid):
 
         (
             self.author_max_len_label,
-            self.author_max_len_spin_button
+            self.author_max_len_spin_button,
         ) = self._combobox_label_init(
             "Author's name:",
             "Maximum length of author's name (in characters)",
