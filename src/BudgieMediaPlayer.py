@@ -28,10 +28,17 @@ from SettingsPage import SettingsPage
 class BudgieMediaPlayer(Budgie.Applet):
     def __init__(self, uuid):
         Budgie.Applet.__init__(self)
+        self.uuid = uuid
+
         self.default_album_cover_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.album_cover_size = self.default_album_cover_size
-        self.uuid = uuid
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
+
+        self.set_settings_prefix("/com/github/zalesyc/budgie-media-player-applet")
+        self.set_settings_schema("com.github.zalesyc.budgie-media-player-applet")
+        self.settings = self.get_applet_settings(self.uuid)
+        self.settings.connect("changed", self.settings_changed)
+
         self.box = Gtk.Box(spacing=10)
         self.add(self.box)
 
@@ -52,13 +59,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popover_box.set_margin_end(5)
         self.popover.add(self.popover_box)
 
-        self.settings = Gio.Settings.new(
-            "com.github.zalesyc.budgie-media-player-applet"
-        )
-        SingleAppPlayer.author_max_len = self.settings.get_int("author-name-max-length")
-        SingleAppPlayer.name_max_len = self.settings.get_int("media-title-max-length")
-        self.settings.connect("changed", self.settings_changed)
-
         self.dbus_namespace_name = "org.mpris.MediaPlayer2"
         self.session_bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
         self.session_bus.signal_subscribe(
@@ -72,9 +72,19 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         dbus_names = self.list_dbus_players()
 
+        author_max_len = self.settings.get_int("author-name-max-length")
+        name_max_len = self.settings.get_int("media-title-max-length")
+
         self.players_list: [SingleAppPlayer] = []
         for dbus_name in dbus_names:
-            self.players_list.append(SingleAppPlayer(dbus_name, self.orientation))
+            self.players_list.append(
+                SingleAppPlayer(
+                    service_name=dbus_name,
+                    orientation=self.orientation,
+                    author_max_len=author_max_len,
+                    name_max_len=name_max_len,
+                )
+            )
             if len(self.players_list) < 2:
                 self.box.pack_start(self.players_list[-1], False, False, 0)
             else:
@@ -137,13 +147,17 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.popup_icon.hide()
 
     def settings_changed(self, settings, key):
-        if key in {"author-name-max-length", "media-title-max-length"}:
-            if key == "author-name-max-length":
-                SingleAppPlayer.author_max_len = self.settings.get_int(key)
-            else:
-                SingleAppPlayer.name_max_len = self.settings.get_int(key)
-
+        if key == "author-name-max-length":
+            author_max_len = self.settings.get_int(key)
             for app_player in self.players_list:
+                app_player.author_max_len = author_max_len
+                app_player.reset_song_label()
+            return
+
+        if key == "media-title-max-length":
+            name_max_len = self.settings.get_int(key)
+            for app_player in self.players_list:
+                app_player.name_max_len = name_max_len
                 app_player.reset_song_label()
 
     def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):

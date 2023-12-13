@@ -37,12 +37,17 @@ class AlbumCoverData:
 
 
 class SingleAppPlayer(Gtk.Box):
-    author_max_len = 30
-    name_max_len = 40
-
-    def __init__(self, service_name: str, orientation: Gtk.Orientation):
+    def __init__(
+        self,
+        service_name: str,
+        orientation: Gtk.Orientation,
+        author_max_len: int,
+        name_max_len: int,
+    ):
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = orientation
+        self.author_max_len = author_max_len
+        self.name_max_len = name_max_len
 
         Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
