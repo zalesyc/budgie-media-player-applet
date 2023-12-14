@@ -157,14 +157,14 @@ class BudgieMediaPlayer(Budgie.Applet):
         if key == "author-name-max-length":
             self.author_max_len = self.settings.get_int(key)
             for app_player in self.players_list:
-                app_player.self.author_max_len = self.author_max_len
+                app_player.author_max_len = self.author_max_len
                 app_player.reset_song_label()
             return
 
         if key == "media-title-max-length":
             self.name_max_len = self.settings.get_int(key)
             for app_player in self.players_list:
-                app_player.self.name_max_len = self.name_max_len
+                app_player.name_max_len = self.name_max_len
                 app_player.reset_song_label()
 
     def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):
