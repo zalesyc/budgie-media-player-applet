@@ -24,7 +24,7 @@ git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie
 ~~~
 
 ### Build the applet
-**Ubuntu Budgie**
+**Ubuntu Budgie, Arch Linux**
 ~~~ shell
 meson setup build --libdir=/usr/lib
 ~~~
@@ -39,3 +39,4 @@ meson setup build --libdir=/usr/lib64
 cd build && sudo ninja install
 ~~~
 
+The applet becomes visible only when there is media actively playing.
