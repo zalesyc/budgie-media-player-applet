@@ -39,6 +39,9 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.settings = self.get_applet_settings(self.uuid)
         self.settings.connect("changed", self.settings_changed)
 
+        self.author_max_len = self.settings.get_int("author-name-max-length")
+        self.name_max_len = self.settings.get_int("media-title-max-length")
+
         self.box = Gtk.Box(spacing=10)
         self.add(self.box)
 
@@ -72,17 +75,14 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         dbus_names = self.list_dbus_players()
 
-        author_max_len = self.settings.get_int("author-name-max-length")
-        name_max_len = self.settings.get_int("media-title-max-length")
-
         self.players_list: [SingleAppPlayer] = []
         for dbus_name in dbus_names:
             self.players_list.append(
                 SingleAppPlayer(
                     service_name=dbus_name,
                     orientation=self.orientation,
-                    author_max_len=author_max_len,
-                    name_max_len=name_max_len,
+                    author_max_len=self.author_max_len,
+                    name_max_len=self.name_max_len,
                 )
             )
             if len(self.players_list) < 2:
@@ -116,7 +116,14 @@ class BudgieMediaPlayer(Budgie.Applet):
     def dbus_players_changed(self, a, b, c, d, e, changes):
         # args a-e are arguments i dont need, but get sent by gtk
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
-            self.players_list.append(SingleAppPlayer(changes[0], self.orientation))
+            self.players_list.append(
+                SingleAppPlayer(
+                    service_name=changes[0],
+                    orientation=self.orientation,
+                    author_max_len=self.author_max_len,
+                    name_max_len=self.name_max_len,
+                ),
+            )
             if len(self.players_list) < 2:
                 self.box.pack_start(self.players_list[-1], False, False, 0)
                 self.players_list[-1].set_album_cover_size(self.album_cover_size)
@@ -148,16 +155,16 @@ class BudgieMediaPlayer(Budgie.Applet):
 
     def settings_changed(self, settings, key):
         if key == "author-name-max-length":
-            author_max_len = self.settings.get_int(key)
+            self.author_max_len = self.settings.get_int(key)
             for app_player in self.players_list:
-                app_player.author_max_len = author_max_len
+                app_player.self.author_max_len = self.author_max_len
                 app_player.reset_song_label()
             return
 
         if key == "media-title-max-length":
-            name_max_len = self.settings.get_int(key)
+            self.name_max_len = self.settings.get_int(key)
             for app_player in self.players_list:
-                app_player.name_max_len = name_max_len
+                app_player.self.name_max_len = self.name_max_len
                 app_player.reset_song_label()
 
     def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):
