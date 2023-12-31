@@ -69,14 +69,20 @@ class SingleAppPlayer(Gtk.Box):
         self._set_album_cover(start_song_metadata.lookup_value("mpris:artUrl", None))
 
         # song_text
-        self.song_text = Gtk.Label()
+        self.song_name = Gtk.Label()
+        self.song_author = Gtk.Label()
+        self.song_separator = Gtk.Label(label="-")
         self._set_song_label(
             start_song_metadata.lookup_value("xesam:artist", None),
             start_song_metadata.lookup_value("xesam:title", None),
         )
-        song_text_event_box = Gtk.EventBox()
-        song_text_event_box.add(self.song_text)
-        song_text_event_box.connect("button-press-event", self.song_clicked)
+        song_name_event_box = Gtk.EventBox()
+        song_name_event_box.add(self.song_name)
+        song_name_event_box.connect("button-press-event", self.song_clicked)
+
+        song_author_event_box = Gtk.EventBox()
+        song_author_event_box.add(self.song_author)
+        song_author_event_box.connect("button-press-event", self.song_clicked)
 
         # control buttons
         self.can_play: bool = self.dbus_player.get_player_property(
@@ -122,19 +128,24 @@ class SingleAppPlayer(Gtk.Box):
 
         # add all widgets
         self.pack_start(album_cover_event_box, False, False, 5)
-        self.pack_start(song_text_event_box, True, True, 5)
-        self.pack_end(self.forward_button, False, False, 0)
-        self.pack_end(self.play_pause_button, False, False, 0)
-        self.pack_end(self.backward_button, False, False, 0)
+        self.pack_start(song_author_event_box, False, False, 0)
+        self.pack_start(self.song_separator, False, False, 8)
+        self.pack_start(song_name_event_box, False, False, 0)
+        self.pack_start(self.backward_button, False, False, 0)
+        self.pack_start(self.play_pause_button, False, False, 0)
+        self.pack_start(self.forward_button, False, False, 0)
 
         self.show_all()
 
     def set_orientation(self, orientation: Gtk.Orientation) -> None:
         self.orientation = orientation
-        self.song_text.set_angle(
-            0 if orientation == Gtk.Orientation.HORIZONTAL else 270
-        )
+        angle = 0 if orientation == Gtk.Orientation.HORIZONTAL else 270
+        self.song_name.set_angle(angle)
+        self.song_author.set_angle(angle)
+        self.song_separator.set_angle(angle)
+
         metadataProperty = self.dbus_player.get_player_property("Metadata")
+
         if metadataProperty is not None:
             self._set_album_cover(metadataProperty.lookup_value("mpris:artUrl", None))
         super().set_orientation(orientation)
@@ -237,11 +248,9 @@ class SingleAppPlayer(Gtk.Box):
         return button
 
     def _set_song_label(self, author: GLib.Variant, title: GLib.Variant):
-        splitter = " - "
         if title is None or (not title.unpack()):
             title = "Unknown"
             if author is None or author.unpack() == [""]:
-                splitter = ""
                 author = ""
 
             else:
@@ -251,21 +260,20 @@ class SingleAppPlayer(Gtk.Box):
             title = title.unpack()
             if author is None or (not ", ".join(author.unpack())):
                 splitter = ""
-                author = ""
 
             else:
                 author = ", ".join(author.unpack())
 
-        self.song_text.set_label(
-            "{}{}{}".format(
-                (author[: self.author_max_len - 3] + "...")
-                if len(author) > self.author_max_len
-                else author,
-                splitter,
-                (title[: self.name_max_len - 3] + "...")
-                if len(title) > self.name_max_len
-                else title,
-            )
+        self.song_author.set_label(
+            (author[: self.author_max_len - 3] + "...")
+            if len(author) > self.author_max_len
+            else author
+        )
+
+        self.song_name.set_label(
+            (title[: self.name_max_len - 3] + "...")
+            if len(title) > self.name_max_len
+            else title
         )
 
     def _set_album_cover(self, art_url):
