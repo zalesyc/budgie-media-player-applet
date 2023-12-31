@@ -21,7 +21,28 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gtk, Gio
 
 
-class SettingsPage(Gtk.Grid):
+class SettingsPage(Gtk.Box):
+    def __init__(self, settings: Gio.Settings):
+        self.settings = settings
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=15)
+
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(100)
+
+        self.stack.add_titled(MainPage(settings), "main_page", "Main")
+        self.stack.add_titled(OrderPage(settings), "order_page", "Order")
+
+        stack_switcher = Gtk.StackSwitcher()
+        stack_switcher.set_stack(self.stack)
+
+        self.pack_start(stack_switcher, False, False, 0)
+        self.pack_start(self.stack, True, True, 0)
+
+        self.show_all()
+
+
+class MainPage(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
         Gtk.Grid.__init__(self)
         self.set_column_spacing(10)
@@ -96,3 +117,109 @@ class SettingsPage(Gtk.Grid):
             spin_button.set_value(self.settings.get_int(spin_button_settings_property))
 
         return label, spin_button
+
+
+class OrderPage(Gtk.Box):
+    def __init__(self, settings: Gio.Settings):
+        self.settings = settings
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+        self.left_box = Gtk.ListBox()
+        self.left_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+
+        middle_buttons_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+        self.right_box = Gtk.ListBox()
+        self.right_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
+
+        self.add_button = Gtk.Button.new_from_icon_name(
+            "arrow-right", Gtk.IconSize.BUTTON
+        )
+        self.add_button.connect("clicked", self._on_add_clicked)
+
+        self.remove_button = Gtk.Button.new_from_icon_name(
+            "arrow-left", Gtk.IconSize.BUTTON
+        )
+        self.remove_button.connect("clicked", self._on_remove_clicked)
+
+        self.move_up_button = Gtk.Button.new_from_icon_name(
+            "arrow-up", Gtk.IconSize.BUTTON
+        )
+        self.move_up_button.connect("clicked", self._on_move_up_clicked)
+
+        self.move_down_button = Gtk.Button.new_from_icon_name(
+            "arrow-down", Gtk.IconSize.BUTTON
+        )
+        self.move_down_button.connect("clicked", self._on_move_down_clicked)
+
+        self.left_box.connect("row-selected", self._on_left_box_selected)
+        self.right_box.connect("row-selected", self._on_right_box_selected)
+
+        middle_buttons_box.pack_start(self.add_button, False, False, 0)
+        middle_buttons_box.pack_start(self.remove_button, False, False, 0)
+        middle_buttons_box.pack_start(self.move_up_button, False, False, 0)
+        middle_buttons_box.pack_start(self.move_down_button, False, False, 0)
+
+        left_frame = Gtk.Frame()
+        left_frame.add(self.left_box)
+
+        right_frame = Gtk.Frame()
+        right_frame.add(self.right_box)
+
+        self.pack_start(left_frame, True, True, 0)
+        self.pack_start(middle_buttons_box, False, False, 0)
+        self.pack_start(right_frame, True, True, 0)
+
+        self.left_box.add(Gtk.Label(label="left Box"))
+        self.left_box.add(Gtk.Label(label="left Box2"))
+        self.right_box.add(Gtk.Label(label="rightt Box"))
+
+        self.show_all()
+
+    def _on_add_clicked(self, *args):
+        selected_rows = self.left_box.get_selected_rows()
+        if len(selected_rows) == 0:
+            return
+
+        self.left_box.remove(selected_rows[0])
+        self.right_box.unselect_all()
+        self.right_box.insert(selected_rows[0], -1)
+
+    def _on_remove_clicked(self, *args):
+        selected_rows = self.right_box.get_selected_rows()
+        if len(selected_rows) == 0:
+            return
+
+        self.right_box.remove(selected_rows[0])
+        self.left_box.unselect_all()
+        self.left_box.insert(selected_rows[0], -1)
+
+    def _on_left_box_selected(self, object, list_row):
+        if list_row is not None:
+            self.right_box.unselect_all()
+
+    def _on_right_box_selected(self, object, list_row):
+        if list_row is not None:
+            self.left_box.unselect_all()
+
+    def _on_move_up_clicked(self, *args):
+        selected_rows = self.right_box.get_selected_rows()
+        box = self.right_box
+        if len(selected_rows) == 0:
+            return
+
+        old_index = selected_rows[0].get_index()
+        if old_index <= 0:
+            return
+
+        self.right_box.remove(selected_rows[0])
+        self.right_box.insert(selected_rows[0], old_index - 1)
+
+    def _on_move_down_clicked(self, button):
+        selected_rows = self.right_box.get_selected_rows()
+        if len(selected_rows) == 0:
+            return
+
+        old_index = selected_rows[0].get_index()
+        self.right_box.remove(selected_rows[0])
+        self.right_box.insert(selected_rows[0], old_index + 1)
