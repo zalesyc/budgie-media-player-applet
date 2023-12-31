@@ -30,9 +30,7 @@ class MyWindow(Gtk.Window):
     def __init__(self):
         if len(sys.argv) > 1 and sys.argv[1] == "-s":
             super().__init__(title="MediaPlayerSettingsTestWin")
-            self.mp = SettingsPage(
-                Gio.Settings.new("com.github.zalesyc.budgie-media-player-applet")
-            )
+            self.mp = SettingsPage(None)
         else:
             super().__init__(title="MediaPlayerTestWin")
             self.mp = BudgieMediaPlayer("0")

@@ -28,7 +28,8 @@ class SettingsPage(Gtk.Grid):
         self.set_row_spacing(10)
 
         self.settings: Gio.Settings = settings
-        self.settings.connect("changed", self.settings_changed)
+        if settings is not None:
+            self.settings.connect("changed", self.settings_changed)
 
         self.max_len_title = Gtk.Label()
         self.max_len_title.set_markup("<b>Maximum Length of:</b>")
@@ -89,5 +90,9 @@ class SettingsPage(Gtk.Grid):
         label.set_hexpand(True)
         label.set_tooltip_text(tooltip_text)
         spin_button = Gtk.SpinButton.new_with_range(5, 100, 1)
-        spin_button.set_value(self.settings.get_int(spin_button_settings_property))
+        if self.settings is None:
+            spin_button.set_value(3)
+        else:
+            spin_button.set_value(self.settings.get_int(spin_button_settings_property))
+
         return label, spin_button
