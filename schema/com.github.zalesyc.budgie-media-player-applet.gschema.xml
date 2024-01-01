@@ -11,6 +11,11 @@
             <summary>Maximum length of the playing media's title</summary>
             <description>The maximum length, in characters, of the playing media's title.</description>
 	        <default>40</default>
-        </key>     
+        </key>
+        <key type="as" name="element-order">
+            <summary>The order of the elements</summary>
+            <description>The order of the elements in the applet.</description>
+            <default>["album_cover", "song_author", "song_separator", "song_name", "backward_button", "play_pause_button", "forward_button"]</default>
+        </key>
     </schema>
 </schemalist>

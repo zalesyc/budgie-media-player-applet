@@ -121,8 +121,18 @@ class MainPage(Gtk.Grid):
 
 class OrderPage(Gtk.Box):
     def __init__(self, settings: Gio.Settings):
-        self.settings = settings
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.settings = settings
+        # TODO: make this a parameter
+        self.available_elements: {str} = {
+            "album_cover",
+            "song_name",
+            "song_separator",
+            "song_author",
+            "backward_button",
+            "play_pause_button",
+            "forward_button",
+        }
 
         self.left_box = Gtk.ListBox()
         self.left_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
@@ -170,11 +180,28 @@ class OrderPage(Gtk.Box):
         self.pack_start(middle_buttons_box, False, False, 0)
         self.pack_start(right_frame, True, True, 0)
 
-        self.left_box.add(Gtk.Label(label="left Box"))
-        self.left_box.add(Gtk.Label(label="left Box2"))
-        self.right_box.add(Gtk.Label(label="rightt Box"))
+        self.enabled_elements_order = settings.get_strv("element-order")
+        self.widget_to_element_name_dict: {Gtk.ListBoxRow: str} = {}
+        for element_name in self.enabled_elements_order:
+            if element_name not in self.available_elements:
+                print(
+                    f"'{element_name}' not in available elements - probably wrong settings -> skipping"
+                )  # TODO: make this error in log framework
+                continue
+            self.right_box.insert(self._make_row(element_name), -1)
+
+        for element_name in self.available_elements:
+            if element_name in self.enabled_elements_order:
+                continue
+            self.left_box.insert(self._make_row(element_name), -1)
 
         self.show_all()
+
+    def _make_row(self, element_name: str) -> Gtk.ListBoxRow:
+        row = Gtk.ListBoxRow.new()
+        row.add(Gtk.Label(label=element_name.replace("_", " ")))
+        self.widget_to_element_name_dict.update({row: element_name})
+        return row
 
     def _on_add_clicked(self, *args):
         selected_rows = self.left_box.get_selected_rows()
@@ -184,6 +211,7 @@ class OrderPage(Gtk.Box):
         self.left_box.remove(selected_rows[0])
         self.right_box.unselect_all()
         self.right_box.insert(selected_rows[0], -1)
+        self._enabled_changed()
 
     def _on_remove_clicked(self, *args):
         selected_rows = self.right_box.get_selected_rows()
@@ -193,14 +221,7 @@ class OrderPage(Gtk.Box):
         self.right_box.remove(selected_rows[0])
         self.left_box.unselect_all()
         self.left_box.insert(selected_rows[0], -1)
-
-    def _on_left_box_selected(self, object, list_row):
-        if list_row is not None:
-            self.right_box.unselect_all()
-
-    def _on_right_box_selected(self, object, list_row):
-        if list_row is not None:
-            self.left_box.unselect_all()
+        self._enabled_changed()
 
     def _on_move_up_clicked(self, *args):
         selected_rows = self.right_box.get_selected_rows()
@@ -214,6 +235,7 @@ class OrderPage(Gtk.Box):
 
         self.right_box.remove(selected_rows[0])
         self.right_box.insert(selected_rows[0], old_index - 1)
+        self._enabled_changed()
 
     def _on_move_down_clicked(self, button):
         selected_rows = self.right_box.get_selected_rows()
@@ -223,3 +245,23 @@ class OrderPage(Gtk.Box):
         old_index = selected_rows[0].get_index()
         self.right_box.remove(selected_rows[0])
         self.right_box.insert(selected_rows[0], old_index + 1)
+        self._enabled_changed()
+
+    def _enabled_changed(self):
+        children = self.right_box.get_children()
+        new_element_order = [None] * len(children)
+
+        for widget in children:
+            new_element_order[
+                widget.get_index()
+            ] = self.widget_to_element_name_dict.get(widget)
+
+        self.settings.set_strv("element-order", new_element_order)
+
+    def _on_left_box_selected(self, object, list_row):
+        if list_row is not None:
+            self.right_box.unselect_all()
+
+    def _on_right_box_selected(self, object, list_row):
+        if list_row is not None:
+            self.left_box.unselect_all()
