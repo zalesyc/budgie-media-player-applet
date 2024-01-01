@@ -34,6 +34,7 @@ class SettingsPage(Gtk.Box):
         self.stack.add_titled(OrderPage(settings), "order_page", "Order")
 
         stack_switcher = Gtk.StackSwitcher()
+        stack_switcher.set_halign(Gtk.Align.CENTER)
         stack_switcher.set_stack(self.stack)
 
         self.pack_start(stack_switcher, False, False, 0)
@@ -138,6 +139,7 @@ class OrderPage(Gtk.Box):
         self.left_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
 
         middle_buttons_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        middle_buttons_box.set_valign(Gtk.Align.CENTER)
 
         self.right_box = Gtk.ListBox()
         self.right_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
@@ -179,8 +181,10 @@ class OrderPage(Gtk.Box):
         self.pack_start(left_frame, True, True, 0)
         self.pack_start(middle_buttons_box, False, False, 0)
         self.pack_start(right_frame, True, True, 0)
-
-        self.enabled_elements_order = settings.get_strv("element-order")
+        if settings is None:
+            self.enabled_elements_order = ["song_author", "song_separator", "song_name"]
+        else:
+            self.enabled_elements_order = settings.get_strv("element-order")
         self.widget_to_element_name_dict: {Gtk.ListBoxRow: str} = {}
         for element_name in self.enabled_elements_order:
             if element_name not in self.available_elements:
