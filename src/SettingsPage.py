@@ -28,6 +28,7 @@ class SettingsPage(Gtk.Box):
 
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_halign(Gtk.Align.CENTER)
         self.stack.set_transition_duration(100)
 
         self.stack.add_titled(MainPage(settings), "main_page", "General")
