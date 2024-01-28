@@ -50,11 +50,13 @@ class SingleAppPlayer(Gtk.Box):
         author_max_len: int,
         name_max_len: int,
         element_order: [str],
+        separator_text: str,
     ):
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = orientation
         self.author_max_len = author_max_len
         self.name_max_len = name_max_len
+        self.separator_text = separator_text
 
         Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
@@ -96,7 +98,7 @@ class SingleAppPlayer(Gtk.Box):
         )
 
         # song_separator
-        self.song_separator = Gtk.Label(label="-")
+        self.song_separator = Gtk.Label(label=self.separator_text)
         self.available_elements.update(
             {"song_separator": Element(self.song_separator, 4)}
         )
@@ -223,6 +225,10 @@ class SingleAppPlayer(Gtk.Box):
             self.pack_start(element.widget, False, False, element.spacing)
 
         self.show_all()
+
+    def set_separator_text(self, new_text: str) -> None:
+        self.separator_text = new_text
+        self.song_separator.set_label(self.separator_text)
 
     def playing_changed(self, status: GLib.Variant):
         if status.get_string() == "Playing":

@@ -17,5 +17,10 @@
             <description>The order of the elements in the applet.</description>
             <default>["album_cover", "song_author", "song_separator", "song_name", "backward_button", "play_pause_button", "forward_button"]</default>
         </key>
+        <key type="s" name="separator-text">
+            <summary>The text/character used as the separator</summary>
+            <description>The text/character that is used as the separator.</description>
+            <default>"-"</default>
+        </key>
     </schema>
 </schemalist>

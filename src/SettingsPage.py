@@ -81,11 +81,28 @@ class MainPage(Gtk.Grid):
             "value_changed", self.author_max_len_spin_box_changed
         )
 
+        separator_text_label = Gtk.Label.new("Separator:")
+        separator_text_label.set_halign(Gtk.Align.START)
+        self.separator_combobox = Gtk.ComboBoxText.new()
+        available_separators = ("-", ":", "·")
+        for separator in available_separators:
+            self.separator_combobox.append(separator, separator)
+
+        if settings is not None:
+            separator_text = settings.get_string("separator-text")
+            if separator_text in available_separators:
+                self.separator_combobox.set_active_id(separator_text)
+
+        self.separator_combobox.connect("changed", self.separator_combobox_changed)
+
         self.attach(self.max_len_title, 0, 0, 2, 1)
         self.attach(self.name_max_len_label, 0, 1, 1, 1)
         self.attach(self.name_max_len_spin_button, 1, 1, 1, 1)
         self.attach(self.author_max_len_label, 0, 2, 1, 1)
         self.attach(self.author_max_len_spin_button, 1, 2, 1, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 3, 2, 1)
+        self.attach(separator_text_label, 0, 4, 1, 1)
+        self.attach(self.separator_combobox, 1, 4, 1, 1)
 
         self.show_all()
 
@@ -94,6 +111,12 @@ class MainPage(Gtk.Grid):
 
     def author_max_len_spin_box_changed(self, widget):
         self.settings.set_int("author-name-max-length", widget.get_value_as_int())
+
+    def separator_combobox_changed(self, combo_box):
+        self.settings.set_string(
+            "separator-text",
+            self.separator_combobox.get_active_text(),
+        )
 
     def settings_changed(self, settings, key):
         if key == "author-name-max-length":

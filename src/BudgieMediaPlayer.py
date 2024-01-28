@@ -42,6 +42,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.author_max_len = self.settings.get_int("author-name-max-length")
         self.name_max_len = self.settings.get_int("media-title-max-length")
         self.element_order = self.settings.get_strv("element-order")
+        self.separator_text = self.settings.get_string("separator-text")
 
         self.box = Gtk.Box(spacing=10)
         self.add(self.box)
@@ -85,6 +86,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                     author_max_len=self.author_max_len,
                     name_max_len=self.name_max_len,
                     element_order=self.element_order,
+                    separator_text=self.separator_text,
                 )
             )
             if len(self.players_list) < 2:
@@ -125,6 +127,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                     author_max_len=self.author_max_len,
                     name_max_len=self.name_max_len,
                     element_order=self.element_order,
+                    separator_text=self.separator_text,
                 ),
             )
             if len(self.players_list) < 2:
@@ -169,11 +172,18 @@ class BudgieMediaPlayer(Budgie.Applet):
             for app_player in self.players_list:
                 app_player.name_max_len = self.name_max_len
                 app_player.reset_song_label()
+            return
 
         if key == "element-order":
             self.element_order = self.settings.get_strv(key)
             for app_player in self.players_list:
                 app_player.set_element_order(self.element_order)
+            return
+
+        if key == "separator-text":
+            self.separator_text = self.settings.get_string("separator-text")
+            for app_player in self.players_list:
+                app_player.set_separator_text(self.separator_text)
 
     def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):
         if len(self.players_list) > 0:
