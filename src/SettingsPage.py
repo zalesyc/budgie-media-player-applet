@@ -120,9 +120,12 @@ class MainPage(Gtk.Grid):
         return label, spin_button
 
 
-class OrderPage(Gtk.Box):
+class OrderPage(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
-        Gtk.Box.__init__(self, orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        Gtk.Grid.__init__(self)
+        self.set_column_spacing(6)
+        self.set_row_spacing(6)
+
         self.settings = settings
         # TODO: make this a parameter
         self.available_elements: {str} = {
@@ -135,14 +138,17 @@ class OrderPage(Gtk.Box):
             "forward_button",
         }
 
-        self.left_box = Gtk.ListBox()
-        self.left_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        left_description = Gtk.Label.new("Available elements")
+        right_description = Gtk.Label.new("Enabled elements")
+
+        self.left_list_box = Gtk.ListBox()
+        self.left_list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
 
         middle_buttons_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         middle_buttons_box.set_valign(Gtk.Align.CENTER)
 
-        self.right_box = Gtk.ListBox()
-        self.right_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
+        self.right_list_box = Gtk.ListBox()
+        self.right_list_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
 
         self.add_button = Gtk.Button.new_from_icon_name(
             "arrow-right", Gtk.IconSize.BUTTON
@@ -164,8 +170,8 @@ class OrderPage(Gtk.Box):
         )
         self.move_down_button.connect("clicked", self._on_move_down_clicked)
 
-        self.left_box.connect("row-selected", self._on_left_box_selected)
-        self.right_box.connect("row-selected", self._on_right_box_selected)
+        self.left_list_box.connect("row-selected", self._on_left_box_selected)
+        self.right_list_box.connect("row-selected", self._on_right_box_selected)
 
         middle_buttons_box.pack_start(self.add_button, False, False, 0)
         middle_buttons_box.pack_start(self.remove_button, False, False, 0)
@@ -173,14 +179,17 @@ class OrderPage(Gtk.Box):
         middle_buttons_box.pack_start(self.move_down_button, False, False, 0)
 
         left_frame = Gtk.Frame()
-        left_frame.add(self.left_box)
+        left_frame.add(self.left_list_box)
 
         right_frame = Gtk.Frame()
-        right_frame.add(self.right_box)
+        right_frame.add(self.right_list_box)
 
-        self.pack_start(left_frame, True, True, 0)
-        self.pack_start(middle_buttons_box, False, False, 0)
-        self.pack_start(right_frame, True, True, 0)
+        self.attach(left_description, 0, 0, 1, 1)
+        self.attach(right_description, 2, 0, 1, 1)
+        self.attach(left_frame, 0, 1, 1, 1)
+        self.attach(middle_buttons_box, 1, 1, 1, 1)
+        self.attach(right_frame, 2, 1, 1, 1)
+
         if settings is None:
             self.enabled_elements_order = ["song_author", "song_separator", "song_name"]
         else:
@@ -192,12 +201,12 @@ class OrderPage(Gtk.Box):
                     f"'{element_name}' not in available elements - probably wrong settings -> skipping"
                 )  # TODO: make this error in log framework
                 continue
-            self.right_box.insert(self._make_row(element_name), -1)
+            self.right_list_box.insert(self._make_row(element_name), -1)
 
         for element_name in self.available_elements:
             if element_name in self.enabled_elements_order:
                 continue
-            self.left_box.insert(self._make_row(element_name), -1)
+            self.left_list_box.insert(self._make_row(element_name), -1)
 
         self.show_all()
 
@@ -208,28 +217,28 @@ class OrderPage(Gtk.Box):
         return row
 
     def _on_add_clicked(self, *args):
-        selected_rows = self.left_box.get_selected_rows()
+        selected_rows = self.left_list_box.get_selected_rows()
         if len(selected_rows) == 0:
             return
 
-        self.left_box.remove(selected_rows[0])
-        self.right_box.unselect_all()
-        self.right_box.insert(selected_rows[0], -1)
+        self.left_list_box.remove(selected_rows[0])
+        self.right_list_box.unselect_all()
+        self.right_list_box.insert(selected_rows[0], -1)
         self._enabled_changed()
 
     def _on_remove_clicked(self, *args):
-        selected_rows = self.right_box.get_selected_rows()
+        selected_rows = self.right_list_box.get_selected_rows()
         if len(selected_rows) == 0:
             return
 
-        self.right_box.remove(selected_rows[0])
-        self.left_box.unselect_all()
-        self.left_box.insert(selected_rows[0], -1)
+        self.right_list_box.remove(selected_rows[0])
+        self.left_list_box.unselect_all()
+        self.left_list_box.insert(selected_rows[0], -1)
         self._enabled_changed()
 
     def _on_move_up_clicked(self, *args):
-        selected_rows = self.right_box.get_selected_rows()
-        box = self.right_box
+        selected_rows = self.right_list_box.get_selected_rows()
+        box = self.right_list_box
         if len(selected_rows) == 0:
             return
 
@@ -237,22 +246,22 @@ class OrderPage(Gtk.Box):
         if old_index <= 0:
             return
 
-        self.right_box.remove(selected_rows[0])
-        self.right_box.insert(selected_rows[0], old_index - 1)
+        self.right_list_box.remove(selected_rows[0])
+        self.right_list_box.insert(selected_rows[0], old_index - 1)
         self._enabled_changed()
 
     def _on_move_down_clicked(self, button):
-        selected_rows = self.right_box.get_selected_rows()
+        selected_rows = self.right_list_box.get_selected_rows()
         if len(selected_rows) == 0:
             return
 
         old_index = selected_rows[0].get_index()
-        self.right_box.remove(selected_rows[0])
-        self.right_box.insert(selected_rows[0], old_index + 1)
+        self.right_list_box.remove(selected_rows[0])
+        self.right_list_box.insert(selected_rows[0], old_index + 1)
         self._enabled_changed()
 
     def _enabled_changed(self):
-        children = self.right_box.get_children()
+        children = self.right_list_box.get_children()
         new_element_order = [None] * len(children)
 
         for widget in children:
@@ -264,8 +273,8 @@ class OrderPage(Gtk.Box):
 
     def _on_left_box_selected(self, object, list_row):
         if list_row is not None:
-            self.right_box.unselect_all()
+            self.right_list_box.unselect_all()
 
     def _on_right_box_selected(self, object, list_row):
         if list_row is not None:
-            self.left_box.unselect_all()
+            self.left_list_box.unselect_all()
