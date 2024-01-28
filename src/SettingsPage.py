@@ -150,26 +150,32 @@ class OrderPage(Gtk.Grid):
         self.right_list_box = Gtk.ListBox()
         self.right_list_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
 
+        left_frame = Gtk.Frame()
+        left_frame.add(self.left_list_box)
+
+        right_frame = Gtk.Frame()
+        right_frame.add(self.right_list_box)
+
         self.add_button = Gtk.Button.new_from_icon_name(
             "arrow-right", Gtk.IconSize.BUTTON
         )
-        self.add_button.connect("clicked", self._on_add_clicked)
-
         self.remove_button = Gtk.Button.new_from_icon_name(
             "arrow-left", Gtk.IconSize.BUTTON
         )
-        self.remove_button.connect("clicked", self._on_remove_clicked)
-
         self.move_up_button = Gtk.Button.new_from_icon_name(
             "arrow-up", Gtk.IconSize.BUTTON
         )
-        self.move_up_button.connect("clicked", self._on_move_up_clicked)
-
         self.move_down_button = Gtk.Button.new_from_icon_name(
             "arrow-down", Gtk.IconSize.BUTTON
         )
-        self.move_down_button.connect("clicked", self._on_move_down_clicked)
+        self.move_down_button = Gtk.Button.new_from_icon_name(
+            "arrow-down", Gtk.IconSize.BUTTON
+        )
 
+        self.add_button.connect("clicked", self._on_add_clicked)
+        self.remove_button.connect("clicked", self._on_remove_clicked)
+        self.move_up_button.connect("clicked", self._on_move_up_clicked)
+        self.move_down_button.connect("clicked", self._on_move_down_clicked)
         self.left_list_box.connect("row-selected", self._on_left_box_selected)
         self.right_list_box.connect("row-selected", self._on_right_box_selected)
 
@@ -177,12 +183,6 @@ class OrderPage(Gtk.Grid):
         middle_buttons_box.pack_start(self.remove_button, False, False, 0)
         middle_buttons_box.pack_start(self.move_up_button, False, False, 0)
         middle_buttons_box.pack_start(self.move_down_button, False, False, 0)
-
-        left_frame = Gtk.Frame()
-        left_frame.add(self.left_list_box)
-
-        right_frame = Gtk.Frame()
-        right_frame.add(self.right_list_box)
 
         self.attach(left_description, 0, 0, 1, 1)
         self.attach(right_description, 2, 0, 1, 1)
@@ -194,7 +194,9 @@ class OrderPage(Gtk.Grid):
             self.enabled_elements_order = ["song_author", "song_separator", "song_name"]
         else:
             self.enabled_elements_order = settings.get_strv("element-order")
+
         self.widget_to_element_name_dict: {Gtk.ListBoxRow: str} = {}
+
         for element_name in self.enabled_elements_order:
             if element_name not in self.available_elements:
                 print(
