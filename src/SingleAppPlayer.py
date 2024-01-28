@@ -213,7 +213,7 @@ class SingleAppPlayer(Gtk.Box):
 
     def set_element_order(self, order: [str], remove_previous: bool = True):
         if remove_previous:
-            self.foreach(lambda widget: self.remove(widget))
+            self.foreach(self.remove(widget))
 
         for element_name in order:
             element = self.available_elements.get(element_name)

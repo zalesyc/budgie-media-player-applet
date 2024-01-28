@@ -30,8 +30,8 @@ class SettingsPage(Gtk.Box):
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.stack.set_transition_duration(100)
 
-        self.stack.add_titled(MainPage(settings), "main_page", "Main")
-        self.stack.add_titled(OrderPage(settings), "order_page", "Order")
+        self.stack.add_titled(MainPage(settings), "main_page", "General")
+        self.stack.add_titled(OrderPage(settings), "order_page", "Element Order")
 
         stack_switcher = Gtk.StackSwitcher()
         stack_switcher.set_halign(Gtk.Align.CENTER)
@@ -296,10 +296,10 @@ class OrderPage(Gtk.Grid):
 
         self.settings.set_strv("element-order", new_element_order)
 
-    def _on_left_box_selected(self, object, list_row):
-        if list_row is not None:
+    def _on_left_box_selected(self, list_box, selected_list_row):
+        if selected_list_row is not None:
             self.right_list_box.unselect_all()
 
-    def _on_right_box_selected(self, object, list_row):
-        if list_row is not None:
+    def _on_right_box_selected(self, list_box, selected_list_row):
+        if selected_list_row is not None:
             self.left_list_box.unselect_all()
