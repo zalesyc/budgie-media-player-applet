@@ -213,7 +213,7 @@ class SingleAppPlayer(Gtk.Box):
 
     def set_element_order(self, order: [str], remove_previous: bool = True):
         if remove_previous:
-            self.foreach(self.remove(widget))
+            self.foreach(self.remove)
 
         for element_name in order:
             element = self.available_elements.get(element_name)
@@ -303,7 +303,7 @@ class SingleAppPlayer(Gtk.Box):
         else:
             title = title.unpack()
             if author is None or (not ", ".join(author.unpack())):
-                splitter = ""
+                author = ""
 
             else:
                 author = ", ".join(author.unpack())
