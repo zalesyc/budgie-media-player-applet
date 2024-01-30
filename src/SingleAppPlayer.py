@@ -36,6 +36,12 @@ class AlbumCoverData:
     song_cover: GdkPixbuf
 
 
+@dataclass
+class Element:
+    widget: Gtk.Widget
+    spacing: int
+
+
 class SingleAppPlayer(Gtk.Box):
     def __init__(
         self,
@@ -43,11 +49,14 @@ class SingleAppPlayer(Gtk.Box):
         orientation: Gtk.Orientation,
         author_max_len: int,
         name_max_len: int,
+        element_order: [str],
+        separator_text: str,
     ):
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = orientation
         self.author_max_len = author_max_len
         self.name_max_len = name_max_len
+        self.separator_text = separator_text
 
         Gtk.Box.__init__(self, spacing=0)
         self.service_name = service_name
@@ -58,6 +67,7 @@ class SingleAppPlayer(Gtk.Box):
 
         start_song_metadata = self.dbus_player.get_player_property("Metadata")
 
+        self.available_elements: {str: Element} = {}
         # album_cover
         self.album_cover_data = AlbumCoverData(None, None)
         self.album_cover = Gtk.Image.new_from_icon_name(
@@ -67,18 +77,33 @@ class SingleAppPlayer(Gtk.Box):
         album_cover_event_box.add(self.album_cover)
         album_cover_event_box.connect("button-press-event", self.song_clicked)
         self._set_album_cover(start_song_metadata.lookup_value("mpris:artUrl", None))
-
-        # song_text
-        self.song_text = Gtk.Label()
-        self._set_song_label(
-            start_song_metadata.lookup_value("xesam:artist", None),
-            start_song_metadata.lookup_value("xesam:title", None),
+        self.available_elements.update(
+            {"album_cover": Element(album_cover_event_box, 5)}
         )
-        song_text_event_box = Gtk.EventBox()
-        song_text_event_box.add(self.song_text)
-        song_text_event_box.connect("button-press-event", self.song_clicked)
 
-        # control buttons
+        # song_name
+        self.song_name = Gtk.Label()
+        song_name_event_box = Gtk.EventBox()
+        song_name_event_box.add(self.song_name)
+        song_name_event_box.connect("button-press-event", self.song_clicked)
+        self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
+
+        # song_author
+        self.song_author = Gtk.Label()
+        song_author_event_box = Gtk.EventBox()
+        song_author_event_box.add(self.song_author)
+        song_author_event_box.connect("button-press-event", self.song_clicked)
+        self.available_elements.update(
+            {"song_author": Element(song_author_event_box, 4)}
+        )
+
+        # song_separator
+        self.song_separator = Gtk.Label(label=self.separator_text)
+        self.available_elements.update(
+            {"song_separator": Element(self.song_separator, 4)}
+        )
+
+        # play_pause_button
         self.can_play: bool = self.dbus_player.get_player_property(
             "CanPlay"
         ).get_boolean()
@@ -103,38 +128,49 @@ class SingleAppPlayer(Gtk.Box):
             )
         self.dbus_player.player_connect("CanPlay", self.can_play_changed)
         self.dbus_player.player_connect("CanPause", self.can_pause_changed)
+        self.available_elements.update(
+            {"play_pause_button": Element(self.play_pause_button, 0)}
+        )
 
+        # backward_button
         self.backward_button = self._init_button(
             "media-skip-backward-symbolic",
             self.backward_clicked,
             enabled=self.dbus_player.get_player_property("CanGoPrevious").get_boolean(),
         )
         self.dbus_player.player_connect("CanGoPrevious", self.can_go_previous_changed)
+        self.available_elements.update(
+            {"backward_button": Element(self.backward_button, 0)}
+        )
 
+        # forward_button
         self.forward_button = self._init_button(
             "media-skip-forward-symbolic",
             self.forward_clicked,
             enabled=self.dbus_player.get_player_property("CanGoNext").get_boolean(),
         )
         self.dbus_player.player_connect("CanGoNext", self.can_go_next_changed)
+        self.available_elements.update(
+            {"forward_button": Element(self.forward_button, 0)}
+        )
 
+        self._set_song_label(
+            start_song_metadata.lookup_value("xesam:artist", None),
+            start_song_metadata.lookup_value("xesam:title", None),
+        )
         self.set_orientation(orientation)
-
-        # add all widgets
-        self.pack_start(album_cover_event_box, False, False, 5)
-        self.pack_start(song_text_event_box, True, True, 5)
-        self.pack_end(self.forward_button, False, False, 0)
-        self.pack_end(self.play_pause_button, False, False, 0)
-        self.pack_end(self.backward_button, False, False, 0)
-
+        self.set_element_order(element_order, remove_previous=False)
         self.show_all()
 
     def set_orientation(self, orientation: Gtk.Orientation) -> None:
         self.orientation = orientation
-        self.song_text.set_angle(
-            0 if orientation == Gtk.Orientation.HORIZONTAL else 270
-        )
+        angle = 0 if orientation == Gtk.Orientation.HORIZONTAL else 270
+        self.song_name.set_angle(angle)
+        self.song_author.set_angle(angle)
+        self.song_separator.set_angle(angle)
+
         metadataProperty = self.dbus_player.get_player_property("Metadata")
+
         if metadataProperty is not None:
             self._set_album_cover(metadataProperty.lookup_value("mpris:artUrl", None))
         super().set_orientation(orientation)
@@ -174,6 +210,25 @@ class SingleAppPlayer(Gtk.Box):
                     GdkPixbuf.InterpType.NEAREST,
                 )
             )
+
+    def set_element_order(self, order: [str], remove_previous: bool = True):
+        if remove_previous:
+            self.foreach(self.remove)
+
+        for element_name in order:
+            element = self.available_elements.get(element_name)
+            if element is None:
+                print(
+                    f"'{element_name}' not in available elements - probably wrong settings -> skipping"
+                )  # TODO: make this error in log framework
+                continue
+            self.pack_start(element.widget, False, False, element.spacing)
+
+        self.show_all()
+
+    def set_separator_text(self, new_text: str) -> None:
+        self.separator_text = new_text
+        self.song_separator.set_label(self.separator_text)
 
     def playing_changed(self, status: GLib.Variant):
         if status.get_string() == "Playing":
@@ -237,11 +292,9 @@ class SingleAppPlayer(Gtk.Box):
         return button
 
     def _set_song_label(self, author: GLib.Variant, title: GLib.Variant):
-        splitter = " - "
         if title is None or (not title.unpack()):
             title = "Unknown"
             if author is None or author.unpack() == [""]:
-                splitter = ""
                 author = ""
 
             else:
@@ -250,22 +303,21 @@ class SingleAppPlayer(Gtk.Box):
         else:
             title = title.unpack()
             if author is None or (not ", ".join(author.unpack())):
-                splitter = ""
                 author = ""
 
             else:
                 author = ", ".join(author.unpack())
 
-        self.song_text.set_label(
-            "{}{}{}".format(
-                (author[: self.author_max_len - 3] + "...")
-                if len(author) > self.author_max_len
-                else author,
-                splitter,
-                (title[: self.name_max_len - 3] + "...")
-                if len(title) > self.name_max_len
-                else title,
-            )
+        self.song_author.set_label(
+            (author[: self.author_max_len - 3] + "...")
+            if len(author) > self.author_max_len
+            else author
+        )
+
+        self.song_name.set_label(
+            (title[: self.name_max_len - 3] + "...")
+            if len(title) > self.name_max_len
+            else title
         )
 
     def _set_album_cover(self, art_url):
