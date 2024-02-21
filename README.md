@@ -22,12 +22,12 @@ There is a file: `src/testWin.py` that is not used when installing the applet, b
 
 ## Install
 ### Install from the budgie extras app
- **Only Ubuntu Budgie 24.04+**
+ **Only Ubuntu Budgie 22.04+**
 
 Go into the budgie extras app on ubuntu budgie and install Media Player Applet
 
-### From commandline using package manager
-**Only Ubuntu**
+### Install from the command line using package manager
+**Only Ubuntu 22.04+**
 
  #### 1. Add the ubuntubudgie/backports ppa
  ~~~ shell
