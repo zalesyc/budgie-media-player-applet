@@ -14,6 +14,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import threading
+from typing import Optional
 from io import BytesIO
 from dataclasses import dataclass
 from urllib.parse import urlparse
@@ -42,6 +44,12 @@ class Element:
     spacing: int
 
 
+@dataclass
+class DownloadThreadData:
+    thread: threading.Thread
+    stop_event: threading.Event
+
+
 class SingleAppPlayer(Gtk.Box):
     def __init__(
         self,
@@ -68,7 +76,10 @@ class SingleAppPlayer(Gtk.Box):
         start_song_metadata = self.dbus_player.get_player_property("Metadata")
 
         self.available_elements: {str: Element} = {}
+
         # album_cover
+        self.current_download_thread: DownloadThreadData = None
+
         self.album_cover_data = AlbumCoverData(None, None)
         self.album_cover = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.MENU
@@ -379,38 +390,36 @@ class SingleAppPlayer(Gtk.Box):
         except gi.repository.GLib.GError:
             self._set_album_cover_other()
 
-    def _set_album_cover_https(self, url):
-        pixbuf = self._stream_image_to_gdkpixbuf(url)
+    def _set_album_cover_https(self, url: str):
+        if self.current_download_thread is not None and (
+            self.current_download_thread.thread.is_alive()
+        ):
+            self.current_download_thread.stop_event.set()
 
-        if not pixbuf:
-            self._set_album_cover_other()
-            return
-
-        self.album_cover_data.song_cover = pixbuf
-
-        # calculating width/height based on height/width to have the same proportions
-        if self.orientation == Gtk.Orientation.HORIZONTAL:
-            self.album_cover.set_from_pixbuf(
-                pixbuf.scale_simple(
-                    int(
-                        (self.album_cover_size / pixbuf.get_height())
-                        * pixbuf.get_width()
-                    ),
-                    self.album_cover_size,
-                    GdkPixbuf.InterpType.NEAREST,
-                )
-            )
-            return
-
-        self.album_cover.set_from_pixbuf(
-            pixbuf.scale_simple(
-                self.album_cover_size,
-                int((self.album_cover_size / pixbuf.get_width()) * pixbuf.get_height()),
-                GdkPixbuf.InterpType.NEAREST,
-            )
+        event = threading.Event()
+        self.current_download_thread = DownloadThreadData(
+            thread=threading.Thread(
+                target=self._get_album_cover_image_to_gdkpixbuf,
+                args=(url, event),
+                daemon=True,
+            ),
+            stop_event=event,
         )
+        self.current_download_thread.thread.start()
 
-    def _stream_image_to_gdkpixbuf(self, url):
+    def _get_album_cover_image_to_gdkpixbuf(
+        self, url: str, stop_event: threading.Event
+    ):
+        pixbuf = self._download_album_cover_image_to_gdkpixbuf(url, stop_event)
+        if pixbuf is None:
+            GLib.idle_add(self._set_album_cover_other)
+            return
+
+        GLib.idle_add(self._set_album_cover_from_pixbuf, pixbuf)
+
+    def _download_album_cover_image_to_gdkpixbuf(
+        self, url: str, stop_event: threading.Event
+    ) -> Optional[GdkPixbuf]:
         try:
             # Send a GET request to the URL
             response = requests.get(url, stream=True, timeout=4)
@@ -420,6 +429,9 @@ class SingleAppPlayer(Gtk.Box):
             # Read the image data in chunks
             img_data = BytesIO()
             for chunk in response.iter_content(chunk_size=1024):
+                if stop_event.isSet():
+                    response.close()
+                    return None
                 img_data.write(chunk)
 
             # Rewind the buffer and open as an image with Pillow
@@ -427,7 +439,7 @@ class SingleAppPlayer(Gtk.Box):
             pil_image = Image.open(img_data)
 
             # Convert the Pillow image to a GdkPixbuf
-            gdkpixbuf = GdkPixbuf.Pixbuf.new_from_data(
+            pixbuf = GdkPixbuf.Pixbuf.new_from_data(
                 pil_image.tobytes(),  # Image data as bytes
                 GdkPixbuf.Colorspace.RGB,
                 False,
@@ -437,6 +449,29 @@ class SingleAppPlayer(Gtk.Box):
                 pil_image.width * 3,
             )
 
-            return gdkpixbuf
         except Exception:
             return None
+
+        # calculating width/height based on height/width to have the same proportions
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
+            pixbuf = pixbuf.scale_simple(
+                int((self.album_cover_size / pixbuf.get_height()) * pixbuf.get_width()),
+                self.album_cover_size,
+                GdkPixbuf.InterpType.NEAREST,
+            )
+        else:
+            pixbuf = pixbuf.scale_simple(
+                self.album_cover_size,
+                int((self.album_cover_size / pixbuf.get_width()) * pixbuf.get_height()),
+                GdkPixbuf.InterpType.NEAREST,
+            )
+
+        if stop_event.isSet():
+            return None
+
+        return pixbuf
+
+    def _set_album_cover_from_pixbuf(self, pixbuf):
+        self.album_cover.set_from_pixbuf(pixbuf)
+        self.album_cover_data.song_cover = pixbuf
+        return False
