@@ -26,9 +26,9 @@ from SettingsPage import SettingsPage
 
 
 class BudgieMediaPlayer(Budgie.Applet):
-    def __init__(self, uuid):
+    def __init__(self, uuid: str):
         Budgie.Applet.__init__(self)
-        self.uuid = uuid
+        self.uuid: str = uuid
 
         self.default_album_cover_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.album_cover_size = self.default_album_cover_size
@@ -36,36 +36,42 @@ class BudgieMediaPlayer(Budgie.Applet):
 
         self.set_settings_prefix("/com/github/zalesyc/budgie-media-player-applet")
         self.set_settings_schema("com.github.zalesyc.budgie-media-player-applet")
-        self.settings = self.get_applet_settings(self.uuid)
+        self.settings: Gio.Settings = self.get_applet_settings(self.uuid)
         self.settings.connect("changed", self.settings_changed)
 
-        self.author_max_len = self.settings.get_int("author-name-max-length")
-        self.name_max_len = self.settings.get_int("media-title-max-length")
-        self.element_order = self.settings.get_strv("element-order")
-        self.separator_text = self.settings.get_string("separator-text")
+        self.author_max_len: int = self.settings.get_int("author-name-max-length")
+        self.name_max_len: int = self.settings.get_int("media-title-max-length")
+        self.element_order: list[str] = self.settings.get_strv("element-order")
+        self.separator_text: str = self.settings.get_string("separator-text")
 
-        self.box = Gtk.Box(spacing=10)
+        self.box: Gtk.Box = Gtk.Box(spacing=10)
         self.add(self.box)
 
-        self.popup_icon = Gtk.Image.new_from_icon_name("arrow-down", Gtk.IconSize.MENU)
-        self.popup_icon_event_box = Gtk.EventBox()
+        self.popup_icon: Gtk.Image = Gtk.Image.new_from_icon_name(
+            "arrow-down", Gtk.IconSize.MENU
+        )
+        self.popup_icon_event_box: Gtk.EventBox = Gtk.EventBox()
         self.popup_icon_event_box.add(self.popup_icon)
         self.popup_icon_event_box.connect("button-press-event", self.show_popup)
         self.box.pack_end(self.popup_icon_event_box, False, False, 0)
 
-        self.popover = Budgie.Popover.new(self)
-        self.popover_manager = Budgie.PopoverManager()
+        self.popover: Budgie.Popover = Budgie.Popover.new(self)
+        self.popover_manager: Budgie.PopoverManager = Budgie.PopoverManager()
         self.popover_manager.register_popover(self, self.popover)
 
-        self.popover_box = Gtk.Box.new(not self.orientation, 10)
+        self.popover_box: Gtk.Box = Gtk.Box.new(
+            Gtk.Orientation(not self.orientation), 10
+        )
         self.popover_box.set_margin_bottom(5)
         self.popover_box.set_margin_top(5)
         self.popover_box.set_margin_start(5)
         self.popover_box.set_margin_end(5)
         self.popover.add(self.popover_box)
 
-        self.dbus_namespace_name = "org.mpris.MediaPlayer2"
-        self.session_bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        self.dbus_namespace_name: str = "org.mpris.MediaPlayer2"
+        self.session_bus: Gio.DBusConnection = Gio.bus_get_sync(
+            Gio.BusType.SESSION, None
+        )
         self.session_bus.signal_subscribe(
             None,  # Sender
             None,  # Interface
@@ -77,7 +83,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         dbus_names = self.list_dbus_players()
 
-        self.players_list: [SingleAppPlayer] = []
+        self.players_list: list[SingleAppPlayer] = []
         for dbus_name in dbus_names:
             self.players_list.append(
                 SingleAppPlayer(
@@ -100,10 +106,10 @@ class BudgieMediaPlayer(Budgie.Applet):
         if len(self.players_list) < 2:
             self.popup_icon.hide()
 
-    def show_popup(self, *args):
+    def show_popup(self, *args) -> None:
         self.popover_manager.show_popover(self)
 
-    def list_dbus_players(self):
+    def list_dbus_players(self) -> list[str]:
         names = self.session_bus.call_sync(
             "org.freedesktop.DBus",  # Destination name
             "/org/freedesktop/DBus",  # Object path
@@ -117,7 +123,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         return [x for x in names[0] if x.startswith(self.dbus_namespace_name)]
 
-    def dbus_players_changed(self, a, b, c, d, e, changes):
+    def dbus_players_changed(self, a, b, c, d, e, changes: GLib.Variant) -> None:
         # args a-e are arguments i dont need, but get sent by gtk
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
             self.players_list.append(
@@ -159,44 +165,46 @@ class BudgieMediaPlayer(Budgie.Applet):
             if len(self.players_list) < 2:
                 self.popup_icon.hide()
 
-    def settings_changed(self, settings, key):
-        if key == "author-name-max-length":
-            self.author_max_len = self.settings.get_int(key)
+    def settings_changed(self, settings, changed_key_name: str) -> None:
+        if changed_key_name == "author-name-max-length":
+            self.author_max_len = self.settings.get_int(changed_key_name)
             for app_player in self.players_list:
                 app_player.author_max_len = self.author_max_len
                 app_player.reset_song_label()
             return
 
-        if key == "media-title-max-length":
-            self.name_max_len = self.settings.get_int(key)
+        if changed_key_name == "media-title-max-length":
+            self.name_max_len = self.settings.get_int(changed_key_name)
             for app_player in self.players_list:
                 app_player.name_max_len = self.name_max_len
                 app_player.reset_song_label()
             return
 
-        if key == "element-order":
-            self.element_order = self.settings.get_strv(key)
+        if changed_key_name == "element-order":
+            self.element_order = self.settings.get_strv(changed_key_name)
             for app_player in self.players_list:
                 app_player.set_element_order(self.element_order)
             return
 
-        if key == "separator-text":
+        if changed_key_name == "separator-text":
             self.separator_text = self.settings.get_string("separator-text")
             for app_player in self.players_list:
                 app_player.set_separator_text(self.separator_text)
 
-    def do_panel_size_changed(self, panel_size, icon_size, small_icon_size):
+    def do_panel_size_changed(
+        self, panel_size: int, icon_size: int, small_icon_size: int
+    ) -> None:
         if len(self.players_list) > 0:
             self.players_list[0].set_album_cover_size(icon_size)
 
-    def do_panel_position_changed(self, position: Budgie.PanelPosition):
+    def do_panel_position_changed(self, position: Budgie.PanelPosition) -> None:
         if position in {Budgie.PanelPosition.LEFT, Budgie.PanelPosition.RIGHT}:
             self.orientation = Gtk.Orientation.VERTICAL
         else:
             self.orientation = Gtk.Orientation.HORIZONTAL
 
         self.box.set_orientation(self.orientation)
-        self.popover_box.set_orientation(not self.orientation)
+        self.popover_box.set_orientation(Gtk.Orientation(not self.orientation))
         for player in self.players_list:
             player.set_orientation(self.orientation)
 

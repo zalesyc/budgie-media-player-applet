@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Callable
+from typing import Callable, Optional
 import gi
 
 gi.require_version("Gio", "2.0")
@@ -23,29 +23,29 @@ from gi.repository import Gio, GLib
 
 class MprisWrapper:
     def __init__(self, service_name: str):
-        self._object_path = "/org/mpris/MediaPlayer2"
-        self._interface_name_player = "org.mpris.MediaPlayer2.Player"
-        self._interface_name_app = "org.mpris.MediaPlayer2"
-        self._connected_functions: dict[str:Callable] = {}
-        self.service_name: str = service_name
+        object_path = "/org/mpris/MediaPlayer2"
+        interface_name_player = "org.mpris.MediaPlayer2.Player"
+        interface_name_app = "org.mpris.MediaPlayer2"
 
-        self.player_proxy = Gio.DBusProxy.new_for_bus_sync(
+        self._connected_functions: dict[str, Callable] = {}
+
+        self.player_proxy: Gio.DBusProxy = Gio.DBusProxy.new_for_bus_sync(
             Gio.BusType.SESSION,
             Gio.DBusProxyFlags.NONE,
             None,
-            self.service_name,
-            self._object_path,
-            self._interface_name_player,
+            service_name,
+            object_path,
+            interface_name_player,
             None,
         )
 
-        self.app_proxy = Gio.DBusProxy.new_for_bus_sync(
+        self.app_proxy: Gio.DBusProxy = Gio.DBusProxy.new_for_bus_sync(
             Gio.BusType.SESSION,
             Gio.DBusProxyFlags.NONE,
             None,
-            self.service_name,
-            self._object_path,
-            self._interface_name_app,
+            service_name,
+            object_path,
+            interface_name_app,
             None,
         )
 
@@ -56,37 +56,44 @@ class MprisWrapper:
     ) -> None:
         self._connected_functions.update({property_name: func})
 
-    def get_player_property(self, property_name: str) -> GLib.Variant:
+    def get_player_property(self, property_name: str) -> Optional[GLib.Variant]:
         return self.player_proxy.get_cached_property(property_name)
 
-    def get_app_property(self, property_name: str) -> GLib.Variant:
+    def get_app_property(self, property_name: str) -> Optional[GLib.Variant]:
         return self.app_proxy.get_cached_property(property_name)
 
-    def call_player_method(self, method_name: str, callback: Callable = None) -> None:
+    def call_player_method(
+        self, method_name: str, callback: Optional[Callable] = None
+    ) -> None:
         self.player_proxy.call(
             method_name=method_name,
             parameters=None,
-            flags=0,
+            flags=Gio.DBusCallFlags.NONE,
             timeout_msec=-1,
             cancellable=None,
             callback=callback,
-            user_data=None,
         )
 
-    def call_app_method(self, method_name: str, callback: Callable = None) -> None:
+    def call_app_method(
+        self, method_name: str, callback: Optional[Callable] = None
+    ) -> None:
         self.app_proxy.call(
             method_name=method_name,
             parameters=None,
-            flags=0,
+            flags=Gio.DBusCallFlags.NONE,
             timeout_msec=-1,
             cancellable=None,
             callback=callback,
-            user_data=None,
         )
 
-    def _property_changed(self, proxy, parameters, *args):
+    def _property_changed(
+        self, proxy: Gio.DBusProxy, changed_properties: GLib.Variant, *args
+    ) -> None:
         for key in self._connected_functions:
-            property_value = parameters.lookup_value(key, None)
-            if property_value is not None:
-                func = self._connected_functions.get(key)
-                func(property_value)
+            property_value = changed_properties.lookup_value(key, None)
+            if property_value is None:
+                continue
+            func = self._connected_functions.get(key)
+            if func is None:
+                continue
+            func(property_value)

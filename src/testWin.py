@@ -23,19 +23,14 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Budgie", "1.0")
 from gi.repository import Gtk, GLib, Gio, Budgie
 from BudgieMediaPlayer import BudgieMediaPlayer
-from SettingsPage import SettingsPage
 
 
 class MyWindow(Gtk.Window):
     def __init__(self):
-        if len(sys.argv) > 1 and sys.argv[1] == "-s":
-            super().__init__(title="MediaPlayerSettingsTestWin")
-            self.mp = SettingsPage(None)
-        else:
-            super().__init__(title="MediaPlayerTestWin")
-            self.mp = BudgieMediaPlayer("0")
-            if len(sys.argv) > 1 and sys.argv[1] == "-v":
-                self.mp.do_panel_position_changed(Budgie.PanelPosition.LEFT)
+        super().__init__(title="MediaPlayerTestWin")
+        self.mp = BudgieMediaPlayer("0")
+        if len(sys.argv) > 1 and sys.argv[1] == "-v":
+            self.mp.do_panel_position_changed(Budgie.PanelPosition.LEFT)
         self.add(self.mp)
 
 

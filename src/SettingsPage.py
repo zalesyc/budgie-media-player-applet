@@ -14,6 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Optional
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -23,16 +24,31 @@ from gi.repository import Gtk, Gio
 
 class SettingsPage(Gtk.Box):
     def __init__(self, settings: Gio.Settings):
-        self.settings = settings
+        self.settings: Gio.Settings = settings
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=15)
 
-        self.stack = Gtk.Stack()
+        self.stack: Gtk.Stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.stack.set_halign(Gtk.Align.CENTER)
         self.stack.set_transition_duration(100)
 
         self.stack.add_titled(MainPage(settings), "main_page", "General")
-        self.stack.add_titled(OrderPage(settings), "order_page", "Element Order")
+        self.stack.add_titled(
+            OrderPage(
+                settings=settings,
+                availible_elements={
+                    "album_cover",
+                    "song_name",
+                    "song_separator",
+                    "song_author",
+                    "backward_button",
+                    "play_pause_button",
+                    "forward_button",
+                },
+            ),
+            "order_page",
+            "Element Order",
+        )
 
         stack_switcher = Gtk.StackSwitcher()
         stack_switcher.set_halign(Gtk.Align.CENTER)
@@ -51,10 +67,9 @@ class MainPage(Gtk.Grid):
         self.set_row_spacing(10)
 
         self.settings: Gio.Settings = settings
-        if settings is not None:
-            self.settings.connect("changed", self.settings_changed)
+        self.settings.connect("changed", self.settings_changed)
 
-        self.max_len_title = Gtk.Label()
+        self.max_len_title: Gtk.Label = Gtk.Label()
         self.max_len_title.set_markup("<b>Maximum Length of:</b>")
         self.max_len_title.set_halign(Gtk.Align.START)
 
@@ -84,15 +99,14 @@ class MainPage(Gtk.Grid):
 
         separator_text_label = Gtk.Label.new("Separator:")
         separator_text_label.set_halign(Gtk.Align.START)
-        self.separator_combobox = Gtk.ComboBoxText.new()
+        self.separator_combobox: Gtk.ComboBoxText = Gtk.ComboBoxText.new()
         available_separators = ("-", ":", "·")
         for separator in available_separators:
             self.separator_combobox.append(separator, separator)
 
-        if settings is not None:
-            separator_text = settings.get_string("separator-text")
-            if separator_text in available_separators:
-                self.separator_combobox.set_active_id(separator_text)
+        separator_text = self.settings.get_string("separator-text")
+        if separator_text in available_separators:
+            self.separator_combobox.set_active_id(separator_text)
 
         self.separator_combobox.connect("changed", self.separator_combobox_changed)
 
@@ -136,42 +150,29 @@ class MainPage(Gtk.Grid):
         label.set_hexpand(True)
         label.set_tooltip_text(tooltip_text)
         spin_button = Gtk.SpinButton.new_with_range(5, 100, 1)
-        if self.settings is None:
-            spin_button.set_value(3)
-        else:
-            spin_button.set_value(self.settings.get_int(spin_button_settings_property))
-
+        spin_button.set_value(self.settings.get_int(spin_button_settings_property))
         return label, spin_button
 
 
 class OrderPage(Gtk.Grid):
-    def __init__(self, settings: Gio.Settings):
+    def __init__(self, settings: Gio.Settings, availible_elements: set[str]):
         Gtk.Grid.__init__(self)
         self.set_column_spacing(6)
         self.set_row_spacing(6)
 
-        self.settings = settings
-        # TODO: make this a parameter
-        self.available_elements: {str} = {
-            "album_cover",
-            "song_name",
-            "song_separator",
-            "song_author",
-            "backward_button",
-            "play_pause_button",
-            "forward_button",
-        }
+        self.settings: Gio.Settings = settings
+        self.available_elements: set[str] = availible_elements
 
         left_description = Gtk.Label.new("Available elements")
         right_description = Gtk.Label.new("Enabled elements")
 
-        self.left_list_box = Gtk.ListBox()
+        self.left_list_box: Gtk.ListBox = Gtk.ListBox()
         self.left_list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
 
         middle_buttons_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         middle_buttons_box.set_valign(Gtk.Align.CENTER)
 
-        self.right_list_box = Gtk.ListBox()
+        self.right_list_box: Gtk.ListBox = Gtk.ListBox()
         self.right_list_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
 
         left_frame = Gtk.Frame()
@@ -180,19 +181,16 @@ class OrderPage(Gtk.Grid):
         right_frame = Gtk.Frame()
         right_frame.add(self.right_list_box)
 
-        self.add_button = Gtk.Button.new_from_icon_name(
+        self.add_button: Gtk.Button = Gtk.Button.new_from_icon_name(
             "arrow-right", Gtk.IconSize.BUTTON
         )
-        self.remove_button = Gtk.Button.new_from_icon_name(
+        self.remove_button: Gtk.Button = Gtk.Button.new_from_icon_name(
             "arrow-left", Gtk.IconSize.BUTTON
         )
-        self.move_up_button = Gtk.Button.new_from_icon_name(
+        self.move_up_button: Gtk.Button = Gtk.Button.new_from_icon_name(
             "arrow-up", Gtk.IconSize.BUTTON
         )
-        self.move_down_button = Gtk.Button.new_from_icon_name(
-            "arrow-down", Gtk.IconSize.BUTTON
-        )
-        self.move_down_button = Gtk.Button.new_from_icon_name(
+        self.move_down_button: Gtk.Button = Gtk.Button.new_from_icon_name(
             "arrow-down", Gtk.IconSize.BUTTON
         )
 
@@ -214,12 +212,9 @@ class OrderPage(Gtk.Grid):
         self.attach(middle_buttons_box, 1, 1, 1, 1)
         self.attach(right_frame, 2, 1, 1, 1)
 
-        if settings is None:
-            self.enabled_elements_order = ["song_author", "song_separator", "song_name"]
-        else:
-            self.enabled_elements_order = settings.get_strv("element-order")
+        self.enabled_elements_order: list[str] = settings.get_strv("element-order")
 
-        self.widget_to_element_name_dict: {Gtk.ListBoxRow: str} = {}
+        self.widget_to_element_name_dict: dict[Gtk.ListBoxRow, str] = {}
 
         for element_name in self.enabled_elements_order:
             if element_name not in self.available_elements:
@@ -291,9 +286,9 @@ class OrderPage(Gtk.Grid):
         new_element_order = [None] * len(children)
 
         for widget in children:
-            new_element_order[
-                widget.get_index()
-            ] = self.widget_to_element_name_dict.get(widget)
+            new_element_order[widget.get_index()] = (
+                self.widget_to_element_name_dict.get(widget)
+            )
 
         self.settings.set_strv("element-order", new_element_order)
 

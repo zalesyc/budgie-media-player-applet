@@ -5,14 +5,22 @@ Applet for the budgie panel for controlling all of your playing media
 
 ## Developing
 There is a file: `src/testWin.py` that is not used when installing the applet, but it is used for debugging, as it creates the applet in a standalone window.
-- If you pass -s as a commandline argument it will instead show the settings page.
 - If you pass -v it will show the vertical representation of the applet.
+
+This project uses type annotations for better code readability,
+they should be:
+- on functions and methods
+- class instance variables (starting with self.)
+
+This applet targets python 3.9+ so, don't use any newer features.
+
+For formatting, I use [black](https://github.com/psf/black)
 
 ## Dependencies
 #### Runtime
 - budgie-1.0
 - gtk+-3.0
-- python3
+- python3 >= 3.9
 - python3-pil / python3-pillow
 - python3-requests
 #### Buildtime
