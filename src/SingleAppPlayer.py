@@ -251,9 +251,10 @@ class SingleAppPlayer(Gtk.Box):
 
         self.show_all()
 
-    def set_separator_text(self, new_text: str) -> None:
-        self.separator_text = new_text
-        self.song_separator.set_label(self.separator_text)
+    def set_separator_text(self, new_text: str, override_set_text: bool = True) -> None:
+        if override_set_text:
+            self.separator_text = new_text
+        self.song_separator.set_label(new_text)
 
     def playing_changed(self, status: GLib.Variant) -> None:
         if status.get_string() == "Playing":
@@ -319,23 +320,33 @@ class SingleAppPlayer(Gtk.Box):
     def _set_song_label(
         self, author: Optional[GLib.Variant], title: Optional[GLib.Variant]
     ) -> None:
-        str_author = ""
-        str_title = ""
         if title is None or (not title.get_string()):
             str_title = "Unknown"
-            if author is None or author.get_strv() == [""]:
+            if (
+                author is None
+                or "".join(author.get_strv()).isspace()
+                or "".join(author.get_strv()) == ""
+            ):
                 str_author = ""
+                self.set_separator_text("", override_set_text=False)
 
             else:
                 str_author = ", ".join(author.get_strv())
+                self.set_separator_text(self.separator_text)
 
         else:
             str_title = title.unpack()
-            if author is None or (not ", ".join(author.get_strv())):
+            if (
+                author is None
+                or "".join(author.get_strv()).isspace()
+                or "".join(author.get_strv()) == ""
+            ):
                 str_author = ""
+                self.set_separator_text("", override_set_text=False)
 
             else:
                 str_author = ", ".join(author.get_strv())
+                self.set_separator_text(self.separator_text)
 
         self.song_author.set_label(
             (str_author[: self.author_max_len - 3] + "...")
