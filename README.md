@@ -52,14 +52,34 @@ sudo apt install budgie-media-player-applet
 
 
 ### Build from source
-#### 1. Install the dependencies
+#### 1. Install dependencies
+Ubuntu, Debian:
+~~~ shell
+sudo apt install git meson ninja-build python3-requests python3-gi python3-pil libglib2.0-bin
+~~~
+
+Fedora:
+~~~ shell
+sudo dnf install git meson ninja-build python3-pillow python3-requests python3-gobject
+~~~
+
+Arch Linux:
+~~~ shell
+sudo pacman -S git meson ninja python-requests python-pillow
+~~~
+
+openSUSE:
+~~~ shell
+sudo zypper in git-core ninja meson glib2-tools python3-Pillow python3-requests python3-gobject python3-gobject-Gdk
+~~~
+
 #### 2. Download the repository
 ~~~ shell
 git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie-media-player-applet
 ~~~
 
 #### 3. Build the applet
-Ubuntu Budgie, Arch Linux
+Ubuntu, Arch Linux
 ~~~ shell
 meson setup build --libdir=/usr/lib
 ~~~
@@ -76,3 +96,21 @@ cd build && sudo ninja install
 
 The applet becomes visible only when there is media actively playing.
 
+## Troubleshooting
+### Instalation does not work
+ - Make sure all dependencies are installed
+ - Try again - remove the entire directory cloned with git and start from step 1
+ 
+### The applet cannot be added to the panel or isn't showing up in the panel
+Run `budgie-panel --replace` from terminal, this will run the panel and
+all of the applets from the terminal displaying any errors.
+
+### The applet is installed but isn't showing in budgie desktop settings
+Look into `/usr/lib64/budgie-desktop/plugins` or `/usr/lib/budgie-desktop/plugins`,
+is there a `budgie-media-player-applet` directory? are there folders for other applets?
+
+If in neither of theese directories is a `budgie-media-player-applet` directory, try installing the applet again.
+
+If there is only a single directory that is `budgie-media-player-applet`, you may installed the applet in the wrong place, try to look for any other directory named `budgie-desktop` which contains the folders for other applets.
+
+If nothing works reinstalling from scratch, or following the steps from the previous categories.
