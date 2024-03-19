@@ -113,4 +113,4 @@ If in neither of theese directories is a `budgie-media-player-applet` directory,
 
 If there is only a single directory that is `budgie-media-player-applet`, you may installed the applet in the wrong place, try to look for any other directory named `budgie-desktop` which contains the folders for other applets.
 
-If nothing works reinstalling from scratch, or following the steps from the previous categories.
+If nothing works try reinstalling from scratch, or try following the steps from the previous categories.
