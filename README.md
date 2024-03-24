@@ -16,18 +16,6 @@ This applet targets python 3.9+ so, don't use any newer features.
 
 For formatting, I use [black](https://github.com/psf/black)
 
-## Dependencies
-#### Runtime
-- budgie-1.0
-- gtk+-3.0
-- python3 >= 3.9
-- python3-pil / python3-pillow
-- python3-requests
-#### Buildtime
-- meson
-- ninja
-- git
-
 ## Install
 ### Install from the budgie extras app
  **Only Ubuntu Budgie 22.04+**
@@ -72,6 +60,28 @@ openSUSE:
 ~~~ shell
 sudo zypper in git-core ninja meson glib2-tools python3-Pillow python3-requests python3-gobject python3-gobject-Gdk
 ~~~
+
+<details>
+ <summary>
+  <b>
+   Full list of dependencies - for other distributions
+  </b>
+ </summary>
+ 
+#### Runtime
+- budgie-1.0
+- gtk+-3.0
+- python3 >= 3.9
+- python3-pil / python3-pillow
+- python3-requests
+- python3-gobject
+- gsettings
+#### Buildtime
+- meson
+- ninja
+- git
+  
+</details>
 
 #### 2. Download the repository
 ~~~ shell
