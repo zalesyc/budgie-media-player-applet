@@ -25,7 +25,7 @@
         <key type="u" name="style">
             <summary>Which style of the ui to use</summary>
             <description>Which version of the ui to use - new = 1, old = 0.</description>
-            <default>0</default>
+            <default>1</default>
         </key>
     </schema>
 </schemalist>

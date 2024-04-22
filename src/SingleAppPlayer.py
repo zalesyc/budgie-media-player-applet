@@ -147,15 +147,16 @@ class SingleAppPlayer:
             self.playing_changed()
 
     def _metadata_changed(self, metadata: GLib.Variant) -> None:
-        new_artist = metadata.lookup_value("xesam:artist", None).get_strv()
-        new_title = metadata.lookup_value("xesam:title", None).get_string()
+        new_artist = metadata.lookup_value("xesam:artist", GLib.VariantType.new("as"))
+        new_title = metadata.lookup_value("xesam:title", GLib.VariantType.new("s"))
         changed = False
 
-        if new_artist is not None and new_artist != self.artist:
+        if new_artist is not None and new_artist.get_strv() != self.artist:
+            self.artist = new_artist.get_strv()
             changed = True
 
-        if new_title is not None and new_title != self.title:
-            self.title = new_title
+        if new_title is not None and new_title.get_string() != self.title:
+            self.title = new_title.get_string()
             changed = True
 
         if changed:
