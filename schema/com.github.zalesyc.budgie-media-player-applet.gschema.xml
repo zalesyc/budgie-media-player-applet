@@ -22,5 +22,10 @@
             <description>The text/character that is used as the separator.</description>
             <default>"-"</default>
         </key>
+        <key type="u" name="style">
+            <summary>Which style of the ui to use</summary>
+            <description>Which version of the ui to use - new = 1, old = 0.</description>
+            <default>0</default>
+        </key>
     </schema>
 </schemalist>

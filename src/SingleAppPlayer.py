@@ -15,7 +15,8 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import threading
-from typing import Optional, Callable
+from typing import Optional, Union
+from enum import IntEnum
 from io import BytesIO
 from dataclasses import dataclass
 from urllib.parse import urlparse, ParseResult
@@ -33,332 +34,177 @@ from mprisWrapper import MprisWrapper
 
 
 @dataclass
-class AlbumCoverData:
-    image_url: Optional[str]
-    song_cover: Optional[GdkPixbuf.Pixbuf]
-
-
-@dataclass
-class Element:
-    widget: Gtk.Widget
-    spacing: int
-
-
-@dataclass
 class DownloadThreadData:
     thread: threading.Thread
     stop_event: threading.Event
 
 
-class SingleAppPlayer(Gtk.Box):
+class AlbumCoverType(IntEnum):
+    Null = 0
+    Pixbuf = 1
+    Gicon = 2
+    IconName = 3
+
+
+@dataclass
+class AlbumCoverData:
+    cover_type: AlbumCoverType
+    image_url_http: Optional[str]
+    song_cover_pixbuf: Optional[GdkPixbuf.Pixbuf]
+    song_cover_other: Union[Gio.Icon, str, None]
+
+
+class SingleAppPlayer:
     def __init__(
         self,
         service_name: str,
-        orientation: Gtk.Orientation,
-        author_max_len: int,
-        name_max_len: int,
-        element_order: list[str],
-        separator_text: str,
     ):
-        self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
-        self.orientation: Gtk.Orientation = orientation
-        self.author_max_len: int = author_max_len
-        self.name_max_len: int = name_max_len
-        self.separator_text: str = separator_text
-
-        Gtk.Box.__init__(self, spacing=0)
         self.service_name: str = service_name
-
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
-        self.dbus_player.player_connect("PlaybackStatus", self.playing_changed)
-        self.dbus_player.player_connect("Metadata", self.metadata_changed)
-
-        start_song_metadata = self.dbus_player.get_player_property("Metadata")
-
-        self.available_elements: dict[str, Element] = {}
-
-        # album_cover
         self.current_download_thread: Optional[DownloadThreadData] = None
 
-        self.album_cover_data: AlbumCoverData = AlbumCoverData(None, None)
-        self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
-            "action-unavailable-symbolic", Gtk.IconSize.MENU
+        self.playing: bool = False
+        self.artist: Optional[list[str]] = []
+        self.title: Optional[str] = ""
+        self.album_cover_data: AlbumCoverData = AlbumCoverData(
+            cover_type=AlbumCoverType.Null,
+            image_url_http=None,
+            song_cover_pixbuf=None,
+            song_cover_other=None,
         )
-        album_cover_event_box = Gtk.EventBox()
-        album_cover_event_box.add(self.album_cover)
-        album_cover_event_box.connect("button-press-event", self.song_clicked)
-        if start_song_metadata is None:
-            self._set_album_cover_other()
-        else:
+        self.can_play: bool = False
+        self.can_pause: bool = False
+        self.can_go_previous: bool = False
+        self.can_go_next: bool = False
+
+        playing = self.dbus_player.get_player_property("PlaybackStatus").get_string()
+        if playing == "Playing":
+            self.playing = True
+        elif playing == "Paused":
+            self.playing = False
+
+        start_song_metadata = self.dbus_player.get_player_property("Metadata")
+        if start_song_metadata is not None:
+            self.artist = start_song_metadata.lookup_value(
+                "xesam:artist", None
+            ).get_strv()
+            self.title = start_song_metadata.lookup_value(
+                "xesam:title", None
+            ).get_string()
             self._set_album_cover(
                 start_song_metadata.lookup_value("mpris:artUrl", None)
             )
-        self.available_elements.update(
-            {"album_cover": Element(album_cover_event_box, 5)}
-        )
-
-        # song_name
-        self.song_name: Gtk.Label = Gtk.Label()
-        song_name_event_box = Gtk.EventBox()
-        song_name_event_box.add(self.song_name)
-        song_name_event_box.connect("button-press-event", self.song_clicked)
-        self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
-
-        # song_author
-        self.song_author: Gtk.Label = Gtk.Label()
-        song_author_event_box = Gtk.EventBox()
-        song_author_event_box.add(self.song_author)
-        song_author_event_box.connect("button-press-event", self.song_clicked)
-        self.available_elements.update(
-            {"song_author": Element(song_author_event_box, 4)}
-        )
-
-        # song_separator
-        self.song_separator: Gtk.Label = Gtk.Label(label=self.separator_text)
-        self.available_elements.update(
-            {"song_separator": Element(self.song_separator, 4)}
-        )
-
-        # play_pause_button
-        can_play = self.dbus_player.get_player_property("CanPlay")
-        self.can_play: bool = can_play.get_boolean() if can_play is not None else False
-        can_pause = self.dbus_player.get_player_property("CanPause")
-        self.can_pause: bool = (
-            can_pause.get_boolean() if can_pause is not None else False
-        )
-
-        playback_status = self.dbus_player.get_player_property("PlaybackStatus")
-        if playback_status is not None and playback_status.get_string() == "Playing":
-            self.play_pause_button: Gtk.Button = self._init_button(
-                "media-playback-pause-symbolic",
-                self.play_paused_clicked,
-                enabled=(self.can_pause or self.can_play),
-            )
-
         else:
-            self.play_pause_button = self._init_button(
-                "media-playback-start-symbolic",
-                self.play_paused_clicked,
-                enabled=(self.can_pause or self.can_play),
-            )
-        self.dbus_player.player_connect("CanPlay", self.can_play_changed)
-        self.dbus_player.player_connect("CanPause", self.can_pause_changed)
-        self.available_elements.update(
-            {"play_pause_button": Element(self.play_pause_button, 0)}
-        )
+            self._set_album_cover_other()
 
-        # backward_button
-        can_go_previous = self.dbus_player.get_player_property("CanGoPrevious")
-        self.backward_button: Gtk.Button = self._init_button(
-            "media-skip-backward-symbolic",
-            self.backward_clicked,
-            enabled=(
-                can_go_previous.get_boolean() if can_go_previous is not None else False
-            ),
-        )
-        self.dbus_player.player_connect("CanGoPrevious", self.can_go_previous_changed)
-        self.available_elements.update(
-            {"backward_button": Element(self.backward_button, 0)}
-        )
+        self.can_play = self.dbus_player.get_player_property("CanPlay").get_boolean()
+        self.can_pause = self.dbus_player.get_player_property("CanPlay").get_boolean()
+        self.can_go_previous = self.dbus_player.get_player_property(
+            "CanGoPrevious"
+        ).get_boolean()
+        self.can_go_next = self.dbus_player.get_player_property(
+            "CanGoNext"
+        ).get_boolean()
 
-        # forward_button
-        can_go_next = self.dbus_player.get_player_property("CanGoNext")
-        self.forward_button: Gtk.Button = self._init_button(
-            "media-skip-forward-symbolic",
-            self.forward_clicked,
-            enabled=can_go_next.get_boolean() if can_go_next is not None else False,
-        )
-        self.dbus_player.player_connect("CanGoNext", self.can_go_next_changed)
-        self.available_elements.update(
-            {"forward_button": Element(self.forward_button, 0)}
-        )
+        self.dbus_player.player_connect("PlaybackStatus", self._playing_changed)
+        self.dbus_player.player_connect("Metadata", self._metadata_changed)
+        self.dbus_player.player_connect("CanPlay", self._can_play_changed)
+        self.dbus_player.player_connect("CanPause", self._can_pause_changed)
+        self.dbus_player.player_connect("CanGoPrevious", self._can_go_previous_changed)
+        self.dbus_player.player_connect("CanGoNext", self._can_go_next_changed)
 
-        if start_song_metadata is None:
-            self._set_song_label(None, None)
-        else:
-            self._set_song_label(
-                start_song_metadata.lookup_value("xesam:artist", None),
-                start_song_metadata.lookup_value("xesam:title", None),
-            )
-        self.set_orientation(orientation)
-        self.set_element_order(element_order, remove_previous=False)
-        self.show_all()
+    def playing_changed(self) -> None:
+        pass
 
-    def set_orientation(self, orientation: Gtk.Orientation) -> None:
-        self.orientation = orientation
-        angle = 0 if orientation == Gtk.Orientation.HORIZONTAL else 270
-        self.song_name.set_angle(angle)
-        self.song_author.set_angle(angle)
-        self.song_separator.set_angle(angle)
+    def metadata_changed(self) -> None:
+        pass
 
-        metadata_property = self.dbus_player.get_player_property("Metadata")
+    def can_play_changed(self) -> None:
+        pass
 
-        if metadata_property is not None:
-            self._set_album_cover(metadata_property.lookup_value("mpris:artUrl", None))
-        super().set_orientation(orientation)
+    def can_pause_changed(self) -> None:
+        pass
 
-    def reset_song_label(self) -> None:
-        metadata = self.dbus_player.get_player_property("Metadata")
-        if metadata is None:
-            self._set_song_label(None, None)
-        else:
-            self._set_song_label(
-                metadata.lookup_value("xesam:artist", None),
-                metadata.lookup_value("xesam:title", None),
-            )
+    def can_go_previous_changed(self) -> None:
+        pass
 
-    def set_album_cover_size(self, size: int) -> None:
-        self.album_cover_size = size
-        if self.album_cover_data.song_cover is not None:
-            pixbuf = self.album_cover_data.song_cover
+    def can_go_next_changed(self) -> None:
+        pass
 
-            if self.orientation == Gtk.Orientation.HORIZONTAL:
-                self.album_cover.set_from_pixbuf(
-                    pixbuf.scale_simple(
-                        int(
-                            (self.album_cover_size / pixbuf.get_height())
-                            * pixbuf.get_width()
-                        ),
-                        self.album_cover_size,
-                        GdkPixbuf.InterpType.NEAREST,
-                    )
-                )
-                return
+    def album_cover_changed(self) -> None:
+        pass
 
-            self.album_cover.set_from_pixbuf(
-                pixbuf.scale_simple(
-                    self.album_cover_size,
-                    int(
-                        (self.album_cover_size / pixbuf.get_width())
-                        * pixbuf.get_height()
-                    ),
-                    GdkPixbuf.InterpType.NEAREST,
-                )
-            )
-
-    def set_element_order(self, order: list[str], remove_previous: bool = True) -> None:
-        if remove_previous:
-            self.foreach(self.remove)
-
-        for element_name in order:
-            element = self.available_elements.get(element_name)
-            if element is None:
-                print(
-                    f"'{element_name}' not in available elements - probably wrong settings -> skipping"
-                )  # TODO: make this error in log framework
-                continue
-            self.pack_start(element.widget, False, False, element.spacing)
-
-        self.show_all()
-
-    def set_separator_text(self, new_text: str, override_set_text: bool = True) -> None:
-        if override_set_text:
-            self.separator_text = new_text
-        self.song_separator.set_label(new_text)
-
-    def playing_changed(self, status: GLib.Variant) -> None:
+    def _playing_changed(self, status: GLib.Variant) -> None:
+        new_playing = None
         if status.get_string() == "Playing":
-            play_pause_icon = Gtk.Image.new_from_icon_name(
-                "media-playback-pause-symbolic", Gtk.IconSize.MENU
-            )
-            self.play_pause_button.set_image(play_pause_icon)
+            new_playing = True
 
         elif status.get_string() == "Paused":
-            play_pause_icon = Gtk.Image.new_from_icon_name(
-                "media-playback-start-symbolic", Gtk.IconSize.MENU
-            )
-            self.play_pause_button.set_image(play_pause_icon)
+            new_playing = False
 
-    def metadata_changed(self, metadata: GLib.Variant) -> None:
-        self._set_song_label(
-            metadata.lookup_value("xesam:artist", None),
-            metadata.lookup_value("xesam:title", None),
-        )
+        if new_playing is not None and new_playing != self.playing:
+            self.playing = new_playing
+            self.playing_changed()
+
+    def _metadata_changed(self, metadata: GLib.Variant) -> None:
+        new_artist = metadata.lookup_value("xesam:artist", None).get_strv()
+        new_title = metadata.lookup_value("xesam:title", None).get_string()
+        changed = False
+
+        if new_artist is not None and new_artist != self.artist:
+            changed = True
+
+        if new_title is not None and new_title != self.title:
+            self.title = new_title
+            changed = True
+
+        if changed:
+            self.metadata_changed()
+
         self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
 
-    def can_play_changed(self, metadata: GLib.Variant) -> None:
-        self.can_play = metadata.get_boolean()
-        self.play_pause_button.set_sensitive(self.can_play or self.can_pause)
+    def _can_play_changed(self, metadata: GLib.Variant) -> None:
+        new_can_play = metadata.get_boolean()
+        if new_can_play is not None and new_can_play != self.can_play:
+            self.can_play = new_can_play
+            self.can_play_changed()
 
-    def can_pause_changed(self, metadata: GLib.Variant) -> None:
-        self.can_pause = metadata.get_boolean()
-        self.play_pause_button.set_sensitive(self.can_play or self.can_pause)
+    def _can_pause_changed(self, metadata: GLib.Variant) -> None:
+        new_can_pause = metadata.get_boolean()
+        if new_can_pause is not None and new_can_pause != self.can_pause:
+            self.can_pause = new_can_pause
+            self.can_pause_changed()
 
-    def can_go_previous_changed(self, metadata: GLib.Variant) -> None:
-        self.backward_button.set_sensitive(metadata.get_boolean())
+    def _can_go_previous_changed(self, metadata: GLib.Variant) -> None:
+        new_can_go_previous = metadata.get_boolean()
+        if (
+            new_can_go_previous is not None
+            and new_can_go_previous != self.can_go_previous
+        ):
+            self.can_go_previous = new_can_go_previous
+            self.can_go_previous_changed()
 
-    def can_go_next_changed(self, metadata: GLib.Variant) -> None:
-        self.forward_button.set_sensitive(metadata.get_boolean())
+    def _can_go_next_changed(self, metadata: GLib.Variant) -> None:
+        new_can_go_next = metadata.get_boolean()
+        if new_can_go_next is not None and new_can_go_next != self.can_go_next:
+            self.can_go_next = new_can_go_next
+            self.can_go_next_changed()
 
-    def play_paused_clicked(self, *args) -> None:
-        self.dbus_player.call_player_method("PlayPause")
-
-    def forward_clicked(self, *args) -> None:
-        self.dbus_player.call_player_method("Next")
-
-    def backward_clicked(self, *args) -> None:
-        self.dbus_player.call_player_method("Previous")
-
-    def song_clicked(self, *args) -> None:
-        self.dbus_player.call_app_method("Raise")
-
-    @staticmethod
-    def _init_button(
-        icon_name: str,
-        on_pressed: Callable,
-        icon_size: Gtk.IconSize = Gtk.IconSize.MENU,
-        enabled: bool = True,
-    ) -> Gtk.Button:
-        icon = Gtk.Image.new_from_icon_name(icon_name, icon_size)
-        button = Gtk.Button()
-        button.set_image(icon)
-        button.set_relief(Gtk.ReliefStyle.NONE)
-        button.set_sensitive(enabled)
-        button.connect("button-press-event", on_pressed)
-        return button
-
-    def _set_song_label(
-        self, author: Optional[GLib.Variant], title: Optional[GLib.Variant]
-    ) -> None:
-        if title is None or (not title.get_string()):
-            str_title = "Unknown"
-            if (
-                author is None
-                or "".join(author.get_strv()).isspace()
-                or "".join(author.get_strv()) == ""
-            ):
-                str_author = ""
-                self.set_separator_text("", override_set_text=False)
-
-            else:
-                str_author = ", ".join(author.get_strv())
-                self.set_separator_text(self.separator_text)
+    def _album_cover_changed(
+        self, cover: Union[GdkPixbuf.Pixbuf, Gio.Icon, str], cover_type: AlbumCoverType
+    ):
+        if cover_type == AlbumCoverType.Pixbuf:
+            self.album_cover_data.song_cover_pixbuf = cover
+            self.album_cover_data.cover_type = AlbumCoverType.Pixbuf
+            self.album_cover_changed()
 
         else:
-            str_title = title.unpack()
-            if (
-                author is None
-                or "".join(author.get_strv()).isspace()
-                or "".join(author.get_strv()) == ""
-            ):
-                str_author = ""
-                self.set_separator_text("", override_set_text=False)
+            if cover != self.album_cover_data.song_cover_other:
+                self.album_cover_data.song_cover_other = cover
+                self.album_cover_data.cover_type = cover_type
+                self.album_cover_changed()
 
-            else:
-                str_author = ", ".join(author.get_strv())
-                self.set_separator_text(self.separator_text)
-
-        self.song_author.set_label(
-            (str_author[: self.author_max_len - 3] + "...")
-            if len(str_author) > self.author_max_len
-            else str_author
-        )
-
-        self.song_name.set_label(
-            (str_title[: self.name_max_len - 3] + "...")
-            if len(str_title) > self.name_max_len
-            else str_title
-        )
+        return False
 
     def _set_album_cover(self, art_url_variant: GLib.Variant) -> None:
         if art_url_variant is None:
@@ -367,10 +213,10 @@ class SingleAppPlayer(Gtk.Box):
 
         url = art_url_variant.get_string()
 
-        if self.album_cover_data.image_url == url:
+        if self.album_cover_data.image_url_http == url:
             return
 
-        self.album_cover_data.image_url = url
+        self.album_cover_data.image_url_http = url
 
         parsed_url = urlparse(url)
 
@@ -386,7 +232,6 @@ class SingleAppPlayer(Gtk.Box):
 
     def _set_album_cover_other(self) -> None:
         desktop_file_name_variant = self.dbus_player.get_app_property("DesktopEntry")
-        self.album_cover_data.song_cover = None
         if desktop_file_name_variant is not None:
             desktop_file_name = desktop_file_name_variant.get_string()
             try:
@@ -397,27 +242,17 @@ class SingleAppPlayer(Gtk.Box):
                 pass
             else:
                 if desktop_app_info is not None:
-                    destop_icon = desktop_app_info.get_icon()
-                    if destop_icon is not None:
-                        self.album_cover.set_from_gicon(destop_icon, Gtk.IconSize.MENU)
-                return
+                    desktop_icon = desktop_app_info.get_icon()
+                    if desktop_icon is not None:
+                        self._album_cover_changed(desktop_icon, AlbumCoverType.Gicon)
+                    return
 
-        self.album_cover.set_from_icon_name(
-            "multimedia-player-symbolic", Gtk.IconSize.MENU
-        )
+        self._album_cover_changed("multimedia-player-symbolic", AlbumCoverType.IconName)
 
     def _set_album_cover_file(self, parsed_url: ParseResult) -> None:
         try:
-            if self.orientation == Gtk.Orientation.HORIZONTAL:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                    parsed_url.path, -1, self.album_cover_size, True
-                )
-            else:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                    parsed_url.path, self.album_cover_size, -1, True
-                )
-            self.album_cover.set_from_pixbuf(pixbuf)
-            self.album_cover_data.song_cover = pixbuf
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(parsed_url.path)
+            self._album_cover_changed(pixbuf, AlbumCoverType.Pixbuf)
         except gi.repository.GLib.GError:
             self._set_album_cover_other()
 
@@ -446,10 +281,11 @@ class SingleAppPlayer(Gtk.Box):
             GLib.idle_add(self._set_album_cover_other)
             return
 
-        GLib.idle_add(self._set_album_cover_from_pixbuf, pixbuf)
+        GLib.idle_add(self._album_cover_changed, pixbuf, AlbumCoverType.Pixbuf)
 
+    @staticmethod
     def _download_album_cover_image_to_gdkpixbuf(
-        self, url: str, stop_event: threading.Event
+        url: str, stop_event: threading.Event
     ) -> Optional[GdkPixbuf.Pixbuf]:
         try:
             # Send a GET request to the URL
@@ -484,26 +320,7 @@ class SingleAppPlayer(Gtk.Box):
         except Exception:
             return None
 
-        # calculating width/height based on height/width to have the same proportions
-        if self.orientation == Gtk.Orientation.HORIZONTAL:
-            resized_pixbuf = pixbuf.scale_simple(
-                int((self.album_cover_size / pixbuf.get_height()) * pixbuf.get_width()),
-                self.album_cover_size,
-                GdkPixbuf.InterpType.NEAREST,
-            )
-        else:
-            resized_pixbuf = pixbuf.scale_simple(
-                self.album_cover_size,
-                int((self.album_cover_size / pixbuf.get_width()) * pixbuf.get_height()),
-                GdkPixbuf.InterpType.NEAREST,
-            )
-
         if stop_event.is_set():
             return None
 
-        return resized_pixbuf
-
-    def _set_album_cover_from_pixbuf(self, pixbuf):
-        self.album_cover.set_from_pixbuf(pixbuf)
-        self.album_cover_data.song_cover = pixbuf
-        return False
+        return pixbuf

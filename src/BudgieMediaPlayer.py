@@ -21,7 +21,7 @@ gi.require_version("Gio", "2.0")
 gi.require_version("Budgie", "1.0")
 from gi.repository import Gtk, Gio, GLib, Budgie
 
-from SingleAppPlayer import SingleAppPlayer
+from PanelControlView import PanelControlView
 from SettingsPage import SettingsPage
 
 
@@ -83,10 +83,10 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         dbus_names = self.list_dbus_players()
 
-        self.players_list: list[SingleAppPlayer] = []
+        self.players_list: list[PanelControlView] = []
         for dbus_name in dbus_names:
             self.players_list.append(
-                SingleAppPlayer(
+                PanelControlView(
                     service_name=dbus_name,
                     orientation=self.orientation,
                     author_max_len=self.author_max_len,
@@ -127,7 +127,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         # args a-e are arguments i dont need, but get sent by gtk
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
             self.players_list.append(
-                SingleAppPlayer(
+                PanelControlView(
                     service_name=changes[0],
                     orientation=self.orientation,
                     author_max_len=self.author_max_len,
