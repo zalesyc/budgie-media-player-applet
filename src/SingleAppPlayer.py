@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import threading
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from enum import IntEnum
 from io import BytesIO
 from dataclasses import dataclass
@@ -31,6 +31,7 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, Gio, GLib, GdkPixbuf
 
 from mprisWrapper import MprisWrapper
+from PopupStyle import PopupStyle
 
 
 @dataclass
@@ -54,14 +55,22 @@ class AlbumCoverData:
     song_cover_other: Union[Gio.Icon, str, None]
 
 
-class SingleAppPlayer:
+class SingleAppPlayer(Gtk.Bin):
     def __init__(
         self,
         service_name: str,
+        style: PopupStyle,
+        open_popover_func: callable,
     ):
+        super().__init__()
+        self.style = style
+        self.open_popover_func = open_popover_func
         self.service_name: str = service_name
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
         self.current_download_thread: Optional[DownloadThreadData] = None
+
+        # this is only used with the plasma style
+        self.panel_view: Optional[SingleAppPlayer] = None
 
         self.playing: bool = False
         self.artist: Optional[list[str]] = []
@@ -85,12 +94,12 @@ class SingleAppPlayer:
 
         start_song_metadata = self.dbus_player.get_player_property("Metadata")
         if start_song_metadata is not None:
-            self.artist = start_song_metadata.lookup_value(
-                "xesam:artist", None
-            ).get_strv()
-            self.title = start_song_metadata.lookup_value(
-                "xesam:title", None
-            ).get_string()
+            new_artist = start_song_metadata.lookup_value("xesam:artist", None)
+            if new_artist is not None:
+                self.artist = new_artist.get_strv()
+            new_title = start_song_metadata.lookup_value("xesam:title", None)
+            if new_title is not None:
+                self.title = new_title.get_string()
             self._set_album_cover(
                 start_song_metadata.lookup_value("mpris:artUrl", None)
             )
@@ -112,6 +121,12 @@ class SingleAppPlayer:
         self.dbus_player.player_connect("CanPause", self._can_pause_changed)
         self.dbus_player.player_connect("CanGoPrevious", self._can_go_previous_changed)
         self.dbus_player.player_connect("CanGoNext", self._can_go_next_changed)
+
+    def panel_size_changed(self, new_size: int):
+        pass
+
+    def panel_orientation_changed(self, new_orientation: Gtk.Orientation):
+        pass
 
     def playing_changed(self) -> None:
         pass

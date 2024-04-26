@@ -16,14 +16,15 @@
 
 
 from SingleAppPlayer import SingleAppPlayer, AlbumCoverType
+from PopupStyle import PopupStyle
 from dataclasses import dataclass
-from typing import Optional, Callable, Union
+from typing import Optional, Callable
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gtk, GdkPixbuf, Gio
+from gi.repository import Gtk, GdkPixbuf
 
 
 @dataclass
@@ -32,7 +33,7 @@ class Element:
     spacing: int
 
 
-class PanelControlView(SingleAppPlayer, Gtk.Box):
+class PanelControlView(SingleAppPlayer):
     def __init__(
         self,
         service_name: str,
@@ -41,6 +42,8 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
         name_max_len: int,
         element_order: list[str],
         separator_text: str,
+        style: PopupStyle,
+        open_popover_func: Callable,
     ):
 
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
@@ -63,9 +66,12 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
         SingleAppPlayer.__init__(
             self,
             service_name,
+            style,
+            open_popover_func,
         )
 
-        Gtk.Box.__init__(self, spacing=0)
+        self.box = Gtk.Box()
+        self.add(self.box)
 
         self.available_elements: dict[str, Element] = {}
 
@@ -124,7 +130,7 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
             )
         )
         self.go_previous_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.go_previous_button.set_sensitive(self.can_go_next)
+        self.go_previous_button.set_sensitive(self.can_go_previous)
         self.go_previous_button.connect("button-press-event", self.forward_clicked)
         self.available_elements.update(
             {"backward_button": Element(self.go_previous_button, 0)}
@@ -143,13 +149,14 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
             {"forward_button": Element(self.go_next_button, 0)}
         )
 
-        self.set_orientation(orientation)
+        self.panel_orientation_changed(orientation)
         self.set_element_order(element_order, remove_previous=False)
         self.show_all()
 
-    def set_orientation(self, orientation: Gtk.Orientation) -> None:
-        self.orientation = orientation
-        angle = 0 if orientation == Gtk.Orientation.HORIZONTAL else 270
+    # overridden parent method
+    def panel_orientation_changed(self, new_orientation: Gtk.Orientation) -> None:
+        self.orientation = new_orientation
+        angle = 0 if new_orientation == Gtk.Orientation.HORIZONTAL else 270
         self.song_name_label.set_angle(angle)
         self.song_author_label.set_angle(angle)
         self.song_separator.set_angle(angle)
@@ -158,7 +165,7 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
 
         if metadata_property is not None:
             self._set_album_cover(metadata_property.lookup_value("mpris:artUrl", None))
-        super().set_orientation(orientation)
+        self.box.set_orientation(new_orientation)
 
     def set_separator_text(self, new_text: str, override_set_text: bool = True) -> None:
         if override_set_text:
@@ -176,12 +183,13 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
                     f"'{element_name}' not in available elements - probably wrong settings -> skipping"
                 )  # TODO: make this error in log framework
                 continue
-            self.pack_start(element.widget, False, False, element.spacing)
+            self.box.pack_start(element.widget, False, False, element.spacing)
 
         self.show_all()
 
-    def set_album_cover_size(self, size: int) -> None:
-        self.album_cover_size = size
+    # overridden parent method
+    def panel_size_changed(self, new_size: int) -> None:
+        self.album_cover_size = new_size
         self.album_cover_changed()
 
     def play_paused_clicked(self, *_) -> None:
@@ -194,7 +202,10 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
         self.dbus_player.call_player_method("Previous")
 
     def song_clicked(self, *_) -> None:
-        self.dbus_player.call_app_method("Raise")
+        if self.style == PopupStyle.Old:
+            self.dbus_player.call_app_method("Raise")
+        elif self.style == PopupStyle.Plasma:
+            self.open_popover_func()
 
     # overridden parent method
     def playing_changed(self) -> None:
@@ -278,6 +289,7 @@ class PanelControlView(SingleAppPlayer, Gtk.Box):
     def _set_song_label(
         self, author: Optional[list[str]], title: Optional[str]
     ) -> None:
+
         if title is None:
             str_title = "Unknown"
             if author is None or "".join(author).isspace() or "".join(author) == "":
