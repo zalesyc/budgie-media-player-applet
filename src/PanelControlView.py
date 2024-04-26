@@ -15,8 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from SingleAppPlayer import SingleAppPlayer, AlbumCoverType
-from PopupStyle import PopupStyle
+from AlbumCoverData import AlbumCoverType, AlbumCoverData
 from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
@@ -37,26 +36,34 @@ class Element:
 class PanelControlView(Gtk.Box):
     def __init__(
         self,
-        service_name: str,
-        orientation: Gtk.Orientation,
-        author_max_len: int,
-        name_max_len: int,
-        element_order: list[str],
-        separator_text: str,
         dbus_player: MprisWrapper,
-        open_popover_func: Callable,
         title: str,
         artist: list[str],
+        playing: bool,
+        can_play_or_pause: bool,
+        can_go_previous: bool,
+        can_go_next: bool,
+        open_popover_func: Callable,
     ):
+        # TO BE FROM CONSTRUCTOR
+        element_order = [
+            "album_cover",
+            "song_author",
+            "song_separator",
+            "song_name",
+            "backward_button",
+            "play_pause_button",
+            "forward_button",
+        ]
 
         Gtk.Box.__init__(self)
-
+        self.dbus_player = dbus_player
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
-        self.orientation: Gtk.Orientation = orientation
-        self.author_max_len: int = author_max_len
-        self.name_max_len: int = name_max_len
-        self.separator_text: str = separator_text
-        self.service_name: str = service_name
+        self.open_popover_func = open_popover_func
+        self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
+        self.author_max_len: int = 20
+        self.name_max_len: int = 20
+        self.separator_text: str = "-"
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.MENU
@@ -105,14 +112,14 @@ class PanelControlView(Gtk.Box):
             Gtk.Image.new_from_icon_name(
                 (
                     "media-playback-pause-symbolic"
-                    if self.playing
+                    if playing
                     else "media-playback-start-symbolic"
                 ),
                 Gtk.IconSize.MENU,
             )
         )
         self.play_pause_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.play_pause_button.set_sensitive(self.can_pause or self.can_play)
+        self.play_pause_button.set_sensitive(can_play_or_pause)
         self.play_pause_button.connect("button-press-event", self.play_paused_clicked)
         self.available_elements.update(
             {"play_pause_button": Element(self.play_pause_button, 0)}
@@ -125,7 +132,7 @@ class PanelControlView(Gtk.Box):
             )
         )
         self.go_previous_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.go_previous_button.set_sensitive(self.can_go_previous)
+        self.go_previous_button.set_sensitive(can_go_previous)
         self.go_previous_button.connect("button-press-event", self.forward_clicked)
         self.available_elements.update(
             {"backward_button": Element(self.go_previous_button, 0)}
@@ -138,29 +145,23 @@ class PanelControlView(Gtk.Box):
             )
         )
         self.go_next_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.go_next_button.set_sensitive(self.can_go_next)
+        self.go_next_button.set_sensitive(can_go_next)
         self.go_next_button.connect("button-press-event", self.forward_clicked)
         self.available_elements.update(
             {"forward_button": Element(self.go_next_button, 0)}
         )
 
-        self.panel_orientation_changed(orientation)
         self.set_element_order(element_order, remove_previous=False)
         self.show_all()
 
     # overridden parent method
-    def panel_orientation_changed(self, new_orientation: Gtk.Orientation) -> None:
+    def set_orientation(self, new_orientation: Gtk.Orientation) -> None:
         self.orientation = new_orientation
         angle = 0 if new_orientation == Gtk.Orientation.HORIZONTAL else 270
         self.song_name_label.set_angle(angle)
         self.song_author_label.set_angle(angle)
         self.song_separator.set_angle(angle)
-
-        metadata_property = self.dbus_player.get_player_property("Metadata")
-
-        if metadata_property is not None:
-            self._set_album_cover(metadata_property.lookup_value("mpris:artUrl", None))
-        self.set_orientation(new_orientation)
+        super().set_orientation(new_orientation)
 
     def set_separator_text(self, new_text: str, override_set_text: bool = True) -> None:
         if override_set_text:
@@ -183,9 +184,11 @@ class PanelControlView(Gtk.Box):
         self.show_all()
 
     # overridden parent method
-    def panel_size_changed(self, new_size: int) -> None:
+    def panel_size_changed(
+        self, new_size: int, album_cover_data: AlbumCoverData
+    ) -> None:
         self.album_cover_size = new_size
-        self.album_cover_changed()
+        self.set_album_cover(album_cover_data)
 
     def play_paused_clicked(self, *_) -> None:
         self.dbus_player.call_player_method("PlayPause")
@@ -197,84 +200,66 @@ class PanelControlView(Gtk.Box):
         self.dbus_player.call_player_method("Previous")
 
     def song_clicked(self, *_) -> None:
-        self.dbus_player.call_app_method("Raise")
+        self.open_popover_func()
 
     # overridden parent method
-    def playing_changed(self) -> None:
+    def set_playing(self, playing: bool) -> None:
         self.play_pause_button.set_image(
             Gtk.Image.new_from_icon_name(
                 (
                     "media-playback-pause-symbolic"
-                    if self.playing
+                    if playing
                     else "media-playback-start-symbolic"
                 ),
                 Gtk.IconSize.MENU,
             )
         )
 
-    # overridden parent method
-    def metadata_changed(self) -> None:
-        self._set_song_label(self.artist, self.title)
+    def set_metadata(self, artist: list[str], title: str) -> None:
+        self._set_song_label(artist, title)
+
+    def set_can_play_or_pause(self, can_play_or_pause: bool) -> None:
+        self.play_pause_button.set_sensitive(can_play_or_pause)
 
     # overridden parent method
-    def can_play_changed(self) -> None:
-        if self.can_play or self.can_pause:
-            self.play_pause_button.set_sensitive(True)
-        else:
-            self.play_pause_button.set_sensitive(False)
+    def set_can_go_previous(self, can_go_previous: bool) -> None:
+        self.go_previous_button.set_sensitive(can_go_previous)
 
     # overridden parent method
-    def can_pause_changed(self) -> None:
-        if self.can_play or self.can_pause:
-            self.play_pause_button.set_sensitive(True)
-        else:
-            self.play_pause_button.set_sensitive(False)
+    def set_can_go_next_changed(self, can_go_next: bool) -> None:
+        self.go_next_button.set_sensitive(can_go_next)
 
     # overridden parent method
-    def can_go_previous_changed(self) -> None:
-        self.go_previous_button.set_sensitive(self.can_go_previous)
-
-    # overridden parent method
-    def can_go_next_changed(self) -> None:
-        self.go_next_button.set_sensitive(self.can_go_next)
-
-    # overridden parent method
-    def album_cover_changed(self) -> None:
-        if self.album_cover_data.cover_type == AlbumCoverType.Pixbuf:
+    def set_album_cover(self, data: AlbumCoverData) -> None:
+        if data.cover_type == AlbumCoverType.Pixbuf:
             if self.orientation == Gtk.Orientation.HORIZONTAL:
-                resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
+                resized_pixbuf = data.song_cover_pixbuf.scale_simple(
                     int(
-                        (
-                            self.album_cover_size
-                            / self.album_cover_data.song_cover_pixbuf.get_height()
-                        )
-                        * self.album_cover_data.song_cover_pixbuf.get_width()
+                        (self.album_cover_size / data.song_cover_pixbuf.get_height())
+                        * data.song_cover_pixbuf.get_width()
                     ),
                     self.album_cover_size,
                     GdkPixbuf.InterpType.BILINEAR,
                 )
             else:
-                resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
+                resized_pixbuf = data.song_cover_pixbuf.scale_simple(
                     self.album_cover_size,
                     int(
-                        (
-                            self.album_cover_size
-                            / self.album_cover_data.song_cover_pixbuf.get_width()
-                        )
-                        * self.album_cover_data.song_cover_pixbuf.get_height()
+                        (self.album_cover_size / data.song_cover_pixbuf.get_width())
+                        * data.song_cover_pixbuf.get_height()
                     ),
                     GdkPixbuf.InterpType.BILINEAR,
                 )
             self.album_cover.set_from_pixbuf(resized_pixbuf)
 
-        elif self.album_cover_data.cover_type == AlbumCoverType.Gicon:
+        elif data.cover_type == AlbumCoverType.Gicon:
             self.album_cover.set_from_gicon(
-                self.album_cover_data.song_cover_other, self.album_cover_size
+                data.song_cover_other, self.album_cover_size
             )
 
-        elif self.album_cover_data.cover_type == AlbumCoverType.IconName:
+        elif data.cover_type == AlbumCoverType.IconName:
             self.album_cover.set_from_icon_name(
-                self.album_cover_data.song_cover_other,
+                data.song_cover_other,
                 min(Gtk.IconSize.lookup(Gtk.IconSize.DND)[2], self.album_cover_size),
             )
 

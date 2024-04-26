@@ -22,9 +22,10 @@ gi.require_version("Gio", "2.0")
 gi.require_version("Budgie", "1.0")
 from gi.repository import Gtk, Gio, GLib, Budgie
 
-from PanelControlView import PanelControlView
+# from PanelControlView import PanelControlView
 from SettingsPage import SettingsPage
-from SingleAppPlayer import SingleAppPlayer
+
+# from SingleAppPlayer import SingleAppPlayer
 from PopupPlasmaControlView import PopupPlasmaControlView
 from PopupStyle import PopupStyle
 
@@ -79,66 +80,35 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         dbus_names = self.list_dbus_players()
 
-        self.popover_box: Optional[Gtk.Box] = None
+        self.players_list: list[PopupPlasmaControlView] = []
+        # index in players_list of the player that has the panel view
+        self.panel_player_index = 0
         self.popover_ntb: Optional[Gtk.Notebook] = None
-        self.players_list: list[SingleAppPlayer] = []
-        if self.popup_style == PopupStyle.Old:
-            self.popover_box = Gtk.Box.new(Gtk.Orientation(not self.orientation), 10)
-            self.popover_box.set_margin_bottom(5)
-            self.popover_box.set_margin_top(5)
-            self.popover_box.set_margin_start(5)
-            self.popover_box.set_margin_end(5)
-            self.popover.add(self.popover_box)
+        self.popover_ntb = Gtk.Notebook.new()
+        self.popover_ntb.set_margin_bottom(5)
+        self.popover_ntb.set_margin_start(5)
+        self.popover_ntb.set_margin_end(5)
+        self.popover_ntb.set_show_border(False)
 
-            for dbus_name in dbus_names:
-                self.players_list.append(
-                    PanelControlView(
-                        service_name=dbus_name,
-                        orientation=self.orientation,
-                        author_max_len=self.author_max_len,
-                        name_max_len=self.name_max_len,
-                        element_order=self.element_order,
-                        separator_text=self.separator_text,
-                        style=self.popup_style,
-                        open_popover_func=self.show_popup,
-                    )
-                )
-                if len(self.players_list) < 2:
-                    self.box.pack_start(self.players_list[-1], False, False, 0)
-                else:
-                    self.popover_box.add(self.players_list[-1])
+        self.popover.add(self.popover_ntb)
 
-        elif self.popup_style == PopupStyle.Plasma:
-            self.popover_ntb = Gtk.Notebook.new()
-            self.popover_ntb.set_margin_bottom(5)
-            self.popover_ntb.set_margin_start(5)
-            self.popover_ntb.set_margin_end(5)
-            self.popover_ntb.set_show_border(False)
-
-            self.popover.add(self.popover_ntb)
-
-            for dbus_name in dbus_names:
-
-                popup_view = PopupPlasmaControlView(
+        for index, dbus_name in enumerate(dbus_names):
+            self.players_list.append(
+                PopupPlasmaControlView(
                     service_name=dbus_name,
-                    style=self.popup_style,
+                    orientation=self.orientation,
+                    author_max_len=self.author_max_len,
+                    name_max_len=self.name_max_len,
+                    separator_text=self.separator_text,
                     open_popover_func=self.show_popup,
                 )
+            )
+            if len(self.players_list) < 2:
+                self.players_list[-1].add_panel_view()
+                self.box.pack_start(self.players_list[-1].panel_view, False, False, 0)
+                self.panel_player_index = index
 
-                if len(self.players_list) < 1:
-                    popup_view.panel_view = PanelControlView(
-                        service_name=dbus_name,
-                        orientation=self.orientation,
-                        author_max_len=self.author_max_len,
-                        name_max_len=self.name_max_len,
-                        element_order=self.element_order,
-                        separator_text=self.separator_text,
-                        style=self.popup_style,
-                        open_popover_func=self.show_popup,
-                    )
-                    self.box.pack_start(popup_view.panel_view, False, False, 0)
-                self.players_list.append(popup_view)
-                self.popover_ntb.append_page(self.players_list[-1])
+            self.popover_ntb.append_page(self.players_list[-1])
 
         self.popover.get_child().show_all()
         self.show_all()
@@ -166,111 +136,113 @@ class BudgieMediaPlayer(Budgie.Applet):
     def dbus_players_changed(
         self, _, __, ___, ____, _____, changes: GLib.Variant
     ) -> None:
-        if (changes[0] not in self.players_list) and changes[2]:  # player was added
-            if self.popup_style == PopupStyle.Old:
-                self._player_added_old(changes[0])
+        pass
 
-            elif self.popup_style == PopupStyle.Plasma:
-                self._player_added_plasma(changes[0])
-
-        elif not changes[2]:  # player was removed
-            for index, player in enumerate(self.players_list):
-                if player.service_name == changes[0]:
-                    if self.popup_style == PopupStyle.Old:
-                        if index == 0:
-                            self.box.remove(player)
-                            del self.players_list[0]
-
-                            if len(self.players_list) > 0:
-                                self.popover_box.remove(self.players_list[0])
-                                self.box.pack_start(
-                                    self.players_list[0], False, False, 0
-                                )
-                                self.players_list[0].panel_size_changed(
-                                    self.album_cover_size
-                                )
-
-                        else:
-                            self.popover_box.remove(player)
-                            del self.players_list[index]
-
-                    elif self.popup_style == PopupStyle.Plasma:
-                        if index == 0:
-                            if player.panel_view is not None:
-                                self.box.remove(player.panel_view)
-
-                            if len(self.players_list) > 0:
-                                self.players_list[1].panel_view = (
-                                    PanelControlView(
-                                        service_name=self.players_list[1].service_name,
-                                        orientation=self.orientation,
-                                        author_max_len=self.author_max_len,
-                                        name_max_len=self.name_max_len,
-                                        element_order=self.element_order,
-                                        separator_text=self.separator_text,
-                                        style=self.popup_style,
-                                        open_popover_func=self.show_popup,
-                                    ),
-                                )
-                                self.box.pack_start(
-                                    self.players_list[1], False, False, 0
-                                )
-                                self.players_list[0].panel_view.panel_size_changed(
-                                    self.album_cover_size
-                                )
-                        self.popover_ntb.remove(player.panel_view)
-                        del self.players_list[index]
-
-                    break
-
-            if len(self.players_list) < 2:
-                self.popup_icon.hide()
-
-    def _player_added_old(self, service_name):
-        self.players_list.append(
-            PanelControlView(
-                service_name=service_name,
-                orientation=self.orientation,
-                author_max_len=self.author_max_len,
-                name_max_len=self.name_max_len,
-                element_order=self.element_order,
-                separator_text=self.separator_text,
-                style=self.popup_style,
-                open_popover_func=self.show_popup,
-            ),
-        )
-        if len(self.players_list) < 2:
-            self.box.pack_start(self.players_list[-1], False, False, 0)
-            self.players_list[-1].panel_size_changed(self.album_cover_size)
-
-        else:
-            self.popover_box.add(self.players_list[-1])
-            self.popup_icon.show()
-
-    def _player_added_plasma(self, service_name):
-        self.players_list.append(
-            PopupPlasmaControlView(
-                service_name=service_name,
-                style=self.popup_style,
-                open_popover_func=self.show_popup,
-            )
-        )
-        self.popover_ntb.append_page(self.players_list[-1])
-
-        if len(self.players_list) == 1:
-            self.players_list[-1].panel_view = PanelControlView(
-                service_name=service_name,
-                orientation=self.orientation,
-                author_max_len=self.author_max_len,
-                name_max_len=self.name_max_len,
-                element_order=self.element_order,
-                separator_text=self.separator_text,
-                style=self.popup_style,
-                open_popover_func=self.show_popup,
-            )
-
-            self.box.pack_start(self.players_list[-1], False, False, 0)
-            self.players_list[-1].panel_size_changed(self.album_cover_size)
+    #     if (changes[0] not in self.players_list) and changes[2]:  # player was added
+    #         if self.popup_style == PopupStyle.Old:
+    #             self._player_added_old(changes[0])
+    #
+    #         elif self.popup_style == PopupStyle.Plasma:
+    #             self._player_added_plasma(changes[0])
+    #
+    #     elif not changes[2]:  # player was removed
+    #         for index, player in enumerate(self.players_list):
+    #             if player.service_name == changes[0]:
+    #                 if self.popup_style == PopupStyle.Old:
+    #                     if index == 0:
+    #                         self.box.remove(player)
+    #                         del self.players_list[0]
+    #
+    #                         if len(self.players_list) > 0:
+    #                             self.popover_box.remove(self.players_list[0])
+    #                             self.box.pack_start(
+    #                                 self.players_list[0], False, False, 0
+    #                             )
+    #                             self.players_list[0].panel_size_changed(
+    #                                 self.album_cover_size
+    #                             )
+    #
+    #                     else:
+    #                         self.popover_box.remove(player)
+    #                         del self.players_list[index]
+    #
+    #                 elif self.popup_style == PopupStyle.Plasma:
+    #                     if index == 0:
+    #                         if player.panel_view is not None:
+    #                             self.box.remove(player.panel_view)
+    #
+    #                         if len(self.players_list) > 0:
+    #                             self.players_list[1].panel_view = (
+    #                                 PanelControlView(
+    #                                     service_name=self.players_list[1].service_name,
+    #                                     orientation=self.orientation,
+    #                                     author_max_len=self.author_max_len,
+    #                                     name_max_len=self.name_max_len,
+    #                                     element_order=self.element_order,
+    #                                     separator_text=self.separator_text,
+    #                                     style=self.popup_style,
+    #                                     open_popover_func=self.show_popup,
+    #                                 ),
+    #                             )
+    #                             self.box.pack_start(
+    #                                 self.players_list[1], False, False, 0
+    #                             )
+    #                             self.players_list[0].panel_view.panel_size_changed(
+    #                                 self.album_cover_size
+    #                             )
+    #                     self.popover_ntb.remove(player.panel_view)
+    #                     del self.players_list[index]
+    #
+    #                 break
+    #
+    #         if len(self.players_list) < 2:
+    #             self.popup_icon.hide()
+    #
+    # def _player_added_old(self, service_name):
+    #     self.players_list.append(
+    #         PanelControlView(
+    #             service_name=service_name,
+    #             orientation=self.orientation,
+    #             author_max_len=self.author_max_len,
+    #             name_max_len=self.name_max_len,
+    #             element_order=self.element_order,
+    #             separator_text=self.separator_text,
+    #             style=self.popup_style,
+    #             open_popover_func=self.show_popup,
+    #         ),
+    #     )
+    #     if len(self.players_list) < 2:
+    #         self.box.pack_start(self.players_list[-1], False, False, 0)
+    #         self.players_list[-1].panel_size_changed(self.album_cover_size)
+    #
+    #     else:
+    #         self.popover_box.add(self.players_list[-1])
+    #         self.popup_icon.show()
+    #
+    # def _player_added_plasma(self, service_name):
+    #     self.players_list.append(
+    #         PopupPlasmaControlView(
+    #             service_name=service_name,
+    #             style=self.popup_style,
+    #             open_popover_func=self.show_popup,
+    #         )
+    #     )
+    #     self.popover_ntb.append_page(self.players_list[-1])
+    #
+    #     if len(self.players_list) == 1:
+    #         self.players_list[-1].panel_view = PanelControlView(
+    #             service_name=service_name,
+    #             orientation=self.orientation,
+    #             author_max_len=self.author_max_len,
+    #             name_max_len=self.name_max_len,
+    #             element_order=self.element_order,
+    #             separator_text=self.separator_text,
+    #             style=self.popup_style,
+    #             open_popover_func=self.show_popup,
+    #         )
+    #
+    #         self.box.pack_start(self.players_list[-1], False, False, 0)
+    #         self.players_list[-1].panel_size_changed(self.album_cover_size)
 
     def settings_changed(self, settings, changed_key_name: str) -> None:
         if changed_key_name == "author-name-max-length":
@@ -289,15 +261,16 @@ class BudgieMediaPlayer(Budgie.Applet):
         if changed_key_name == "element-order":
             self.element_order = self.settings.get_strv(changed_key_name)
             for app_player in self.players_list:
-                if app_player is PanelControlView:
-                    app_player.set_element_order(self.element_order)
+                pass
+                # if app_player is PanelControlView:
+                #     app_player.set_element_order(self.element_order)
             return
 
         if changed_key_name == "separator-text":
             self.separator_text = self.settings.get_string("separator-text")
             for app_player in self.players_list:
-                if app_player is PanelControlView:
-                    app_player.set_separator_text(self.separator_text)
+                pass
+                # app_player.set_separator_text(self.separator_text)
 
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int

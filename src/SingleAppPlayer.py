@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from urllib.parse import urlparse, ParseResult
 import requests
 from PIL import Image
+from PanelControlView import PanelControlView
+from AlbumCoverData import AlbumCoverType, AlbumCoverData
 
 import gi
 
@@ -40,37 +42,29 @@ class DownloadThreadData:
     stop_event: threading.Event
 
 
-class AlbumCoverType(IntEnum):
-    Null = 0
-    Pixbuf = 1
-    Gicon = 2
-    IconName = 3
-
-
-@dataclass
-class AlbumCoverData:
-    cover_type: AlbumCoverType
-    image_url_http: Optional[str]
-    song_cover_pixbuf: Optional[GdkPixbuf.Pixbuf]
-    song_cover_other: Union[Gio.Icon, str, None]
-
-
 class SingleAppPlayer(Gtk.Bin):
     def __init__(
         self,
         service_name: str,
-        style: PopupStyle,
         open_popover_func: callable,
+        orientation: Gtk.Orientation,
+        author_max_len: int,
+        name_max_len: int,
+        separator_text: str,
     ):
         super().__init__()
-        self.style = style
+        self.panel_view: Optional[PanelControlView] = None
+
         self.open_popover_func = open_popover_func
         self.service_name: str = service_name
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
         self.current_download_thread: Optional[DownloadThreadData] = None
-
-        # this is only used with the plasma style
-        self.panel_view: Optional[SingleAppPlayer] = None
+        self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
+        self.orientation: Gtk.Orientation = orientation
+        self.author_max_len: int = author_max_len
+        self.name_max_len: int = name_max_len
+        self.separator_text: str = separator_text
+        self.service_name: str = service_name
 
         self.playing: bool = False
         self.artist: Optional[list[str]] = []
@@ -122,6 +116,21 @@ class SingleAppPlayer(Gtk.Bin):
         self.dbus_player.player_connect("CanGoPrevious", self._can_go_previous_changed)
         self.dbus_player.player_connect("CanGoNext", self._can_go_next_changed)
 
+    def add_panel_view(self) -> None:
+        self.panel_view = PanelControlView(
+            dbus_player=self.dbus_player,
+            title=self.title,
+            artist=self.artist,
+            playing=self.playing,
+            can_play_or_pause=(self.can_play or self.can_pause),
+            can_go_previous=self.can_go_previous,
+            can_go_next=self.can_go_next,
+            open_popover_func=self.open_popover_func,
+        )
+
+    def remove_panel_view(self) -> None:
+        self.panel_view = None
+
     def panel_size_changed(self, new_size: int):
         pass
 
@@ -160,6 +169,8 @@ class SingleAppPlayer(Gtk.Bin):
         if new_playing is not None and new_playing != self.playing:
             self.playing = new_playing
             self.playing_changed()
+            if self.panel_view is not None:
+                self.panel_view.set_playing(self.playing)
 
     def _metadata_changed(self, metadata: GLib.Variant) -> None:
         new_artist = metadata.lookup_value("xesam:artist", GLib.VariantType.new("as"))
@@ -176,6 +187,8 @@ class SingleAppPlayer(Gtk.Bin):
 
         if changed:
             self.metadata_changed()
+            if self.panel_view is not None:
+                self.panel_view.set_metadata(self.artist, self.title)
 
         self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
 

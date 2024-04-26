@@ -15,10 +15,9 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from SingleAppPlayer import SingleAppPlayer, AlbumCoverType
-from PopupStyle import PopupStyle
-from typing import Callable, Optional
-from PanelControlView import PanelControlView
+from SingleAppPlayer import SingleAppPlayer
+from AlbumCoverData import AlbumCoverType
+from typing import Callable
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -36,20 +35,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         orientation: Gtk.Orientation,
         author_max_len: int,
         name_max_len: int,
-        element_order: list[str],
         separator_text: str,
-        style: PopupStyle,
         open_popover_func: Callable,
     ):
-        self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
-        self.orientation: Gtk.Orientation = orientation
-        self.author_max_len: int = author_max_len
-        self.name_max_len: int = name_max_len
-        self.separator_text: str = separator_text
-        self.service_name: str = service_name
-
-        self.orientation = Gtk.Orientation.HORIZONTAL  # TODO: get from appplet
-        self._panel_view: Optional[PanelControlView] = None
 
         self.main_layout_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.info_layout_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -70,8 +58,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
         SingleAppPlayer.__init__(
             self,
             service_name,
-            style,
             open_popover_func,
+            orientation,
+            author_max_len,
+            name_max_len,
+            separator_text,
         )
 
         # album cover
@@ -136,20 +127,6 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.controls_layout_box.set_spacing(5)
         self.main_layout_box.pack_start(self.controls_layout_box, False, False, 0)
         self.add(self.main_layout_box)
-
-    def add_panel_view(self) -> None:
-        self._panel_view = PanelControlView(
-            self.service_name,
-            self.orientation,
-            self.author_max_len,
-            self.name_max_len,
-            [],
-            self.separator_text,
-            self.open_popover_func,
-        )
-
-    def get_panel_view(self) -> Optional[PanelControlView]:
-        return self._panel_view
 
     def on_play_pause_pressed(self, *_):
         self.dbus_player.call_player_method("PlayPause")
