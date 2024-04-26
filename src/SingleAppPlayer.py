@@ -168,9 +168,9 @@ class SingleAppPlayer(Gtk.Bin):
 
         if new_playing is not None and new_playing != self.playing:
             self.playing = new_playing
-            self.playing_changed()
             if self.panel_view is not None:
                 self.panel_view.set_playing(self.playing)
+            self.playing_changed()
 
     def _metadata_changed(self, metadata: GLib.Variant) -> None:
         new_artist = metadata.lookup_value("xesam:artist", GLib.VariantType.new("as"))
@@ -186,9 +186,9 @@ class SingleAppPlayer(Gtk.Bin):
             changed = True
 
         if changed:
-            self.metadata_changed()
             if self.panel_view is not None:
                 self.panel_view.set_metadata(self.artist, self.title)
+            self.metadata_changed()
 
         self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
 
@@ -196,12 +196,16 @@ class SingleAppPlayer(Gtk.Bin):
         new_can_play = metadata.get_boolean()
         if new_can_play is not None and new_can_play != self.can_play:
             self.can_play = new_can_play
+            if self.panel_view is not None:
+                self.panel_view.set_can_play_or_pause(self.can_play or self.can_pause)
             self.can_play_changed()
 
     def _can_pause_changed(self, metadata: GLib.Variant) -> None:
         new_can_pause = metadata.get_boolean()
         if new_can_pause is not None and new_can_pause != self.can_pause:
             self.can_pause = new_can_pause
+            if self.panel_view is not None:
+                self.panel_view.set_can_play_or_pause(self.can_play or self.can_pause)
             self.can_pause_changed()
 
     def _can_go_previous_changed(self, metadata: GLib.Variant) -> None:
@@ -211,12 +215,16 @@ class SingleAppPlayer(Gtk.Bin):
             and new_can_go_previous != self.can_go_previous
         ):
             self.can_go_previous = new_can_go_previous
+            if self.panel_view is not None:
+                self.panel_view.set_can_go_previous(self.can_go_previous)
             self.can_go_previous_changed()
 
     def _can_go_next_changed(self, metadata: GLib.Variant) -> None:
         new_can_go_next = metadata.get_boolean()
         if new_can_go_next is not None and new_can_go_next != self.can_go_next:
             self.can_go_next = new_can_go_next
+            if self.panel_view is not None:
+                self.panel_view.set_can_go_next(self.can_go_previous)
             self.can_go_next_changed()
 
     def _album_cover_changed(
@@ -225,12 +233,16 @@ class SingleAppPlayer(Gtk.Bin):
         if cover_type == AlbumCoverType.Pixbuf:
             self.album_cover_data.song_cover_pixbuf = cover
             self.album_cover_data.cover_type = AlbumCoverType.Pixbuf
+            if self.panel_view is not None:
+                self.panel_view.set_album_cover(self.album_cover_data)
             self.album_cover_changed()
 
         else:
             if cover != self.album_cover_data.song_cover_other:
                 self.album_cover_data.song_cover_other = cover
                 self.album_cover_data.cover_type = cover_type
+                if self.panel_view is not None:
+                    self.panel_view.set_album_cover(self.album_cover_data)
                 self.album_cover_changed()
 
         return False

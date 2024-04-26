@@ -133,7 +133,7 @@ class PanelControlView(Gtk.Box):
         )
         self.go_previous_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_previous_button.set_sensitive(can_go_previous)
-        self.go_previous_button.connect("button-press-event", self.forward_clicked)
+        self.go_previous_button.connect("button-press-event", self.backward_clicked)
         self.available_elements.update(
             {"backward_button": Element(self.go_previous_button, 0)}
         )
@@ -226,7 +226,7 @@ class PanelControlView(Gtk.Box):
         self.go_previous_button.set_sensitive(can_go_previous)
 
     # overridden parent method
-    def set_can_go_next_changed(self, can_go_next: bool) -> None:
+    def set_can_go_next(self, can_go_next: bool) -> None:
         self.go_next_button.set_sensitive(can_go_next)
 
     # overridden parent method
