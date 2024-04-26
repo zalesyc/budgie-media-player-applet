@@ -17,6 +17,7 @@
 
 from SingleAppPlayer import SingleAppPlayer, AlbumCoverType
 from PopupStyle import PopupStyle
+from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
 import gi
@@ -33,7 +34,7 @@ class Element:
     spacing: int
 
 
-class PanelControlView(SingleAppPlayer):
+class PanelControlView(Gtk.Box):
     def __init__(
         self,
         service_name: str,
@@ -42,9 +43,13 @@ class PanelControlView(SingleAppPlayer):
         name_max_len: int,
         element_order: list[str],
         separator_text: str,
-        style: PopupStyle,
+        dbus_player: MprisWrapper,
         open_popover_func: Callable,
+        title: str,
+        artist: list[str],
     ):
+
+        Gtk.Box.__init__(self)
 
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = orientation
@@ -62,16 +67,6 @@ class PanelControlView(SingleAppPlayer):
         self.play_pause_button: Gtk.Button = Gtk.Button()
         self.go_previous_button: Gtk.Button = Gtk.Button()
         self.go_next_button: Gtk.Button = Gtk.Button()
-
-        SingleAppPlayer.__init__(
-            self,
-            service_name,
-            style,
-            open_popover_func,
-        )
-
-        self.box = Gtk.Box()
-        self.add(self.box)
 
         self.available_elements: dict[str, Element] = {}
 
@@ -103,7 +98,7 @@ class PanelControlView(SingleAppPlayer):
             {"song_separator": Element(self.song_separator, 4)}
         )
 
-        self._set_song_label(title=self.title, author=self.artist)
+        self._set_song_label(title=title, author=artist)
 
         # play pause button
         self.play_pause_button.set_image(
@@ -165,7 +160,7 @@ class PanelControlView(SingleAppPlayer):
 
         if metadata_property is not None:
             self._set_album_cover(metadata_property.lookup_value("mpris:artUrl", None))
-        self.box.set_orientation(new_orientation)
+        self.set_orientation(new_orientation)
 
     def set_separator_text(self, new_text: str, override_set_text: bool = True) -> None:
         if override_set_text:
@@ -183,7 +178,7 @@ class PanelControlView(SingleAppPlayer):
                     f"'{element_name}' not in available elements - probably wrong settings -> skipping"
                 )  # TODO: make this error in log framework
                 continue
-            self.box.pack_start(element.widget, False, False, element.spacing)
+            self.pack_start(element.widget, False, False, element.spacing)
 
         self.show_all()
 
@@ -202,10 +197,7 @@ class PanelControlView(SingleAppPlayer):
         self.dbus_player.call_player_method("Previous")
 
     def song_clicked(self, *_) -> None:
-        if self.style == PopupStyle.Old:
-            self.dbus_player.call_app_method("Raise")
-        elif self.style == PopupStyle.Plasma:
-            self.open_popover_func()
+        self.dbus_player.call_app_method("Raise")
 
     # overridden parent method
     def playing_changed(self) -> None:
