@@ -27,7 +27,6 @@ from SettingsPage import SettingsPage
 
 # from SingleAppPlayer import SingleAppPlayer
 from PopupPlasmaControlView import PopupPlasmaControlView
-from PopupStyle import PopupStyle
 
 
 class BudgieMediaPlayer(Budgie.Applet):
@@ -48,7 +47,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.name_max_len: int = self.settings.get_int("media-title-max-length")
         self.element_order: list[str] = self.settings.get_strv("element-order")
         self.separator_text: str = self.settings.get_string("separator-text")
-        self.popup_style: PopupStyle = PopupStyle(self.settings.get_uint("popup-style"))
 
         self.box: Gtk.Box = Gtk.Box(spacing=10)
         self.add(self.box)
@@ -89,7 +87,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popover_ntb.set_margin_start(5)
         self.popover_ntb.set_margin_end(5)
         self.popover_ntb.set_show_border(False)
-
+        self.popover_ntb.set_scrollable(True)
         self.popover.add(self.popover_ntb)
 
         for index, dbus_name in enumerate(dbus_names):
@@ -108,7 +106,10 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.box.pack_start(self.players_list[-1].panel_view, False, False, 0)
                 self.panel_player_index = index
 
-            self.popover_ntb.append_page(self.players_list[-1])
+            self.popover_ntb.append_page(
+                self.players_list[-1],
+                self.players_list[-1].get_icon(Gtk.IconSize.MENU),
+            )
 
         self.popover.get_child().show_all()
         self.show_all()
@@ -147,7 +148,10 @@ class BudgieMediaPlayer(Budgie.Applet):
                     open_popover_func=self.show_popup,
                 ),
             )
-            self.popover_ntb.append_page(self.players_list[-1])
+            self.popover_ntb.append_page(
+                self.players_list[-1],
+                self.players_list[-1].get_icon(Gtk.IconSize.MENU),
+            )
             self.popover_ntb.show_all()
 
             if len(self.players_list) <= 1:
@@ -205,8 +209,8 @@ class BudgieMediaPlayer(Budgie.Applet):
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
     ) -> None:
-        if len(self.players_list) > 0:
-            self.players_list[0].panel_size_changed(icon_size)
+        if len(self.players_list) > self.panel_player_index:
+            self.players_list[self.panel_player_index].panel_size_changed(icon_size)
 
     def do_panel_position_changed(self, position: Budgie.PanelPosition) -> None:
         if position in {Budgie.PanelPosition.LEFT, Budgie.PanelPosition.RIGHT}:
@@ -215,10 +219,10 @@ class BudgieMediaPlayer(Budgie.Applet):
             self.orientation = Gtk.Orientation.HORIZONTAL
 
         self.box.set_orientation(self.orientation)
-        if self.popup_style == PopupStyle.Old:
-            self.popover_box.set_orientation(Gtk.Orientation(not self.orientation))
-            for player in self.players_list:
-                player.panel_orientation_changed(self.orientation)
+        if len(self.players_list) > self.panel_player_index:
+            self.players_list[self.panel_player_index].panel_orientation_changed(
+                self.orientation
+            )
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""

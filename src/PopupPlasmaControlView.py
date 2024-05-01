@@ -23,7 +23,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf, GLib
 
 
 class PopupPlasmaControlView(SingleAppPlayer):
@@ -69,7 +69,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.info_layout_hbox.pack_start(self.album_cover, False, False, 0)
 
         # song name label
-        self.song_name_label.set_markup(f"<b>{self.title}</b>")
+        self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
         # song author label
@@ -142,7 +142,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
     # overridden parent method
     def metadata_changed(self) -> None:
-        self.song_name_label.set_markup(f"<b>{self.title}</b>")
+        self._set_title(self.title)
         self.song_author_label.set_label(", ".join(self.artist))
 
     # overridden parent method
@@ -222,3 +222,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.album_cover_data.song_cover_other,
                 self.ALBUM_COVER_SIZE,
             )
+
+    def _set_title(self, new_text: str):
+        esc_text = GLib.markup_escape_text(new_text)
+        self.song_name_label.set_markup(f"<b>{esc_text}</b>")

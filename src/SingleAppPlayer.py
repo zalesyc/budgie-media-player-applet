@@ -33,7 +33,6 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, Gio, GLib, GdkPixbuf
 
 from mprisWrapper import MprisWrapper
-from PopupStyle import PopupStyle
 
 
 @dataclass
@@ -53,6 +52,7 @@ class SingleAppPlayer(Gtk.Bin):
         separator_text: str,
     ):
         super().__init__()
+        self._icon: Optional[Gtk.Widget] = None
         self.panel_view: Optional[PanelControlView] = None
 
         self.open_popover_func = open_popover_func
@@ -127,6 +127,26 @@ class SingleAppPlayer(Gtk.Bin):
             can_go_next=self.can_go_next,
             open_popover_func=self.open_popover_func,
         )
+
+    def get_icon(self, size: int) -> Gtk.Image:
+        print(self.service_name)
+        desktop_file_name_variant = self.dbus_player.get_app_property("DesktopEntry")
+        if desktop_file_name_variant is not None:
+            desktop_file_name = desktop_file_name_variant.get_string()
+
+            try:
+                desktop_app_info = Gio.DesktopAppInfo.new(
+                    desktop_file_name + ".desktop"
+                )
+            except TypeError:
+                pass
+            else:
+                if desktop_app_info is not None:
+                    desktop_icon = desktop_app_info.get_icon()
+                    if desktop_icon is not None:
+                        return Gtk.Image.new_from_gicon(desktop_icon, size)
+
+        return Gtk.Image.new_from_icon_name("multimedia-player-symbolic", size)
 
     def remove_panel_view(self) -> None:
         self.panel_view = None
