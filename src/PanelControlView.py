@@ -44,26 +44,19 @@ class PanelControlView(Gtk.Box):
         can_go_previous: bool,
         can_go_next: bool,
         open_popover_func: Callable,
+        author_max_len: int,
+        title_max_len: int,
+        separator_text: str,
+        element_order: list[str],
     ):
-        # TO BE FROM CONSTRUCTOR
-        element_order = [
-            "album_cover",
-            "song_author",
-            "song_separator",
-            "song_name",
-            "backward_button",
-            "play_pause_button",
-            "forward_button",
-        ]
-
         Gtk.Box.__init__(self)
         self.dbus_player = dbus_player
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.open_popover_func = open_popover_func
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
-        self.author_max_len: int = 20
-        self.name_max_len: int = 20
-        self.separator_text: str = "-"
+        self.author_max_len: int = author_max_len
+        self.name_max_len: int = title_max_len
+        self.separator_text: str = separator_text
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.MENU

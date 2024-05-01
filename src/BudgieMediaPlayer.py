@@ -102,7 +102,12 @@ class BudgieMediaPlayer(Budgie.Applet):
                 )
             )
             if len(self.players_list) < 2:
-                self.players_list[-1].add_panel_view()
+                self.players_list[-1].add_panel_view(
+                    self.author_max_len,
+                    self.name_max_len,
+                    self.separator_text,
+                    self.element_order,
+                )
                 self.box.pack_start(self.players_list[-1].panel_view, False, False, 0)
                 self.panel_player_index = index
 
@@ -156,7 +161,12 @@ class BudgieMediaPlayer(Budgie.Applet):
 
             if len(self.players_list) <= 1:
                 self.panel_player_index = 0
-                self.players_list[-1].add_panel_view()
+                self.players_list[-1].add_panel_view(
+                    self.author_max_len,
+                    self.name_max_len,
+                    self.separator_text,
+                    self.element_order,
+                )
                 self.box.pack_start(self.players_list[-1].panel_view, False, False, 0)
 
         elif not changes[2]:  # player was removed
@@ -178,33 +188,41 @@ class BudgieMediaPlayer(Budgie.Applet):
             if len(self.players_list) < 2:
                 self.popup_icon.hide()
 
-    def settings_changed(self, settings, changed_key_name: str) -> None:
+    def settings_changed(self, _, changed_key_name: str) -> None:
         if changed_key_name == "author-name-max-length":
             self.author_max_len = self.settings.get_int(changed_key_name)
-            for app_player in self.players_list:
-                app_player.author_max_len = self.author_max_len
-                app_player.metadata_changed()
+            if len(self.players_list) > self.panel_player_index:
+                if self.players_list[self.panel_player_index].panel_view is not None:
+                    self.players_list[self.panel_player_index].set_author_max_len(
+                        self.author_max_len
+                    )
             return
 
         if changed_key_name == "media-title-max-length":
             self.name_max_len = self.settings.get_int(changed_key_name)
-            for app_player in self.players_list:
-                app_player.name_max_len = self.name_max_len
-                app_player.metadata_changed()
+            if len(self.players_list) > self.panel_player_index:
+                if self.players_list[self.panel_player_index].panel_view is not None:
+                    self.players_list[self.panel_player_index].set_title_max_len(
+                        self.name_max_len
+                    )
 
         if changed_key_name == "element-order":
             self.element_order = self.settings.get_strv(changed_key_name)
-            for app_player in self.players_list:
-                pass
-                # if app_player is PanelControlView:
-                #     app_player.set_element_order(self.element_order)
+            if len(self.players_list) > self.panel_player_index:
+                if self.players_list[self.panel_player_index].panel_view is not None:
+                    self.players_list[self.panel_player_index].set_element_order(
+                        self.element_order
+                    )
             return
 
         if changed_key_name == "separator-text":
             self.separator_text = self.settings.get_string("separator-text")
-            for app_player in self.players_list:
-                pass
-                # app_player.set_separator_text(self.separator_text)
+            if len(self.players_list) > self.panel_player_index:
+                if self.players_list[self.panel_player_index].panel_view is not None:
+                    self.players_list[self.panel_player_index].set_separator_text(
+                        self.separator_text
+                    )
+            return
 
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int

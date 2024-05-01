@@ -116,7 +116,13 @@ class SingleAppPlayer(Gtk.Bin):
         self.dbus_player.player_connect("CanGoPrevious", self._can_go_previous_changed)
         self.dbus_player.player_connect("CanGoNext", self._can_go_next_changed)
 
-    def add_panel_view(self) -> None:
+    def add_panel_view(
+        self,
+        author_max_len: int,
+        title_max_len: int,
+        separator_text: str,
+        element_order: list[str],
+    ) -> None:
         self.panel_view = PanelControlView(
             dbus_player=self.dbus_player,
             title=self.title,
@@ -126,6 +132,10 @@ class SingleAppPlayer(Gtk.Bin):
             can_go_previous=self.can_go_previous,
             can_go_next=self.can_go_next,
             open_popover_func=self.open_popover_func,
+            author_max_len=author_max_len,
+            title_max_len=title_max_len,
+            separator_text=separator_text,
+            element_order=element_order,
         )
 
     def get_icon(self, size: int) -> Gtk.Image:
@@ -152,10 +162,30 @@ class SingleAppPlayer(Gtk.Bin):
         self.panel_view = None
 
     def panel_size_changed(self, new_size: int):
-        pass
+        if self.panel_view is not None:
+            self.panel_view.panel_size_changed(new_size, self.album_cover_data)
 
     def panel_orientation_changed(self, new_orientation: Gtk.Orientation):
-        pass
+        if self.panel_view is not None:
+            self.panel_view.set_orientation(new_orientation)
+
+    def set_author_max_len(self, new_length: int):
+        if self.panel_view is not None:
+            self.panel_view.author_max_len = new_length
+            self.panel_view.set_metadata(self.artist, self.title)
+
+    def set_title_max_len(self, new_length: int):
+        if self.panel_view is not None:
+            self.panel_view.name_max_len = new_length
+            self.panel_view.set_metadata(self.artist, self.title)
+
+    def set_separator_text(self, new_separator: str):
+        if self.panel_view is not None:
+            self.panel_view.set_separator_text(new_separator)
+
+    def set_element_order(self, new_order: list[str]):
+        if self.panel_view is not None:
+            self.panel_view.set_element_order(new_order)
 
     def playing_changed(self) -> None:
         pass
