@@ -160,34 +160,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
     # overridden parent method
 
     def popover_to_be_open(self):
-        self.dbus_player.get_player_property_non_cached(
-            "Position", self._on_ready_callback
-        )
-
-    def _on_ready_callback(self, result: Optional[GLib.Variant]) -> None:
-        if result is None:
-            self.position = 0
-            return
-
-        data = result[0]
-        self.position = round(data / 1_000_000)
-
-        timer_id = 0
-        while True:
-            if timer_id not in self.timers_running:
-                break
-            elif timer_id > 50:
-                # TODO: make tis log in logging framework
-                print(
-                    f"budgie-media-player: There are too many running timers, playerId: {self.service_name}, timers: {self.timers_running}"
-                )
-                return
-            timer_id += 1
-
-        self.timers_running.update({timer_id: True})
-        GLib.timeout_add(1000, self._timer_updating_progress, timer_id)
-        self._set_progress_label_and_bar()
-        print(self.timers_running)
+        self._create_timer()
 
     def popover_just_closed(self):
         for key in self.timers_running:
@@ -197,6 +170,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def metadata_changed(self) -> None:
         self._set_title(self.title)
         self.song_author_label.set_label(", ".join(self.artist))
+        self._create_timer()
 
     # overridden parent method
     def can_play_changed(self) -> None:
@@ -232,6 +206,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 Gtk.IconSize.MENU,
             )
         )
+        if self.playing:
+            self._create_timer()
+        else:
+            for key in self.timers_running:
+                self.timers_running[key] = False
 
     # overridden parent method
     def album_cover_changed(self) -> None:
@@ -276,17 +255,49 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.ALBUM_COVER_SIZE,
             )
 
+    def _create_timer(self):
+        for key in self.timers_running:
+            self.timers_running[key] = False
+
+        self.dbus_player.get_player_property_non_cached(
+            "Position", self._on_ready_callback
+        )
+
+    def _on_ready_callback(self, result: Optional[GLib.Variant]) -> None:
+        if result is None:
+            self.position = 0
+            return
+
+        data = result[0]
+        self.position = round(data / 1_000_000)
+
+        timer_id = 0
+        while True:
+            if timer_id not in self.timers_running:
+                break
+            elif timer_id > 50:
+                # TODO: make tis log in logging framework
+                print(
+                    f"budgie-media-player: There are too many running timers, playerId: {self.service_name}, timers: {self.timers_running}"
+                )
+                return
+            timer_id += 1
+
+        self.timers_running.update({timer_id: True})
+        GLib.timeout_add(1000, self._timer_updating_progress, timer_id)
+        self._set_progress_label_and_bar()
+
     def _timer_updating_progress(self, identifier: int):
         if self.playing:
             self.position += 1
             self._set_progress_label_and_bar()
 
         status = self.timers_running[identifier]
-        print(f"{identifier} -> {status}")
+
         if not status:
             del self.timers_running[identifier]
-            print(f"{identifier} -> {self.timers_running}")
             return False
+
         return True
 
     def _set_title(self, new_text: str):

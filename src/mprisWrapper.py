@@ -79,7 +79,7 @@ class MprisWrapper:
             "Get",
             GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", property_name)),
             Gio.DBusCallFlags.NONE,
-            1,
+            -1,
             None,
             self._get_player_property_callback,
             callback,
