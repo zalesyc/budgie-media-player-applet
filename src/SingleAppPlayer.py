@@ -247,7 +247,7 @@ class SingleAppPlayer(Gtk.Bin):
     def _metadata_changed(self, metadata: GLib.Variant) -> None:
         new_artist = metadata.lookup_value("xesam:artist", GLib.VariantType.new("as"))
         new_title = metadata.lookup_value("xesam:title", GLib.VariantType.new("s"))
-        new_length = metadata.lookup_value("mpris:length", GLib.VariantType.new("x"))
+        new_length = metadata.lookup_value("mpris:length", None)
         changed_art_title = False
         changed_len = False
 
