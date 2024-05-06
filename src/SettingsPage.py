@@ -110,6 +110,13 @@ class MainPage(Gtk.Grid):
 
         self.separator_combobox.connect("changed", self.separator_combobox_changed)
 
+        show_arrow_label: Gtk.Label = Gtk.Label(label="Show Arrow:")
+        show_arrow_label.set_halign(Gtk.Align.START)
+        self.show_arrow_switch: Gtk.Switch = Gtk.Switch()
+        self.show_arrow_switch.set_state(settings.get_boolean("show-arrow"))
+        self.show_arrow_switch.set_halign(Gtk.Align.END)
+        self.show_arrow_switch.connect("state_set", self.show_arrow_changed)
+
         self.attach(self.max_len_title, 0, 0, 2, 1)
         self.attach(self.name_max_len_label, 0, 1, 1, 1)
         self.attach(self.name_max_len_spin_button, 1, 1, 1, 1)
@@ -118,6 +125,8 @@ class MainPage(Gtk.Grid):
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 3, 2, 1)
         self.attach(separator_text_label, 0, 4, 1, 1)
         self.attach(self.separator_combobox, 1, 4, 1, 1)
+        self.attach(show_arrow_label, 0, 5, 1, 1)
+        self.attach(self.show_arrow_switch, 1, 5, 1, 1)
 
         self.show_all()
 
@@ -133,6 +142,10 @@ class MainPage(Gtk.Grid):
             self.separator_combobox.get_active_text(),
         )
 
+    def show_arrow_changed(self, _, state: bool) -> bool:
+        self.settings.set_boolean("show-arrow", state)
+        return False
+
     def settings_changed(self, settings, key):
         if key == "author-name-max-length":
             self.author_max_len_spin_button.set_value(self.settings.get_int(key))
@@ -140,6 +153,14 @@ class MainPage(Gtk.Grid):
 
         if key == "media-title-max-length":
             self.name_max_len_spin_button.set_value(self.settings.get_int(key))
+            return
+
+        if key == "separator-text":
+            self.separator_combobox.set_active_id(self.settings.get_string(key))
+            return
+
+        if key == "show-arrow":
+            self.show_arrow_switch.set_state(self.settings.get_boolean(key))
             return
 
     def _combobox_label_init(

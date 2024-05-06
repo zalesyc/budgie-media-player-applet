@@ -22,5 +22,10 @@
             <description>The text/character that is used as the separator.</description>
             <default>"-"</default>
         </key>
+        <key type="b" name="show-arrow">
+            <summary>Whether to show the arrow</summary>
+            <description>Whether to show the arrow, which opens the popover.</description>
+            <default>false</default>
+        </key>
     </schema>
 </schemalist>

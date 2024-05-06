@@ -120,7 +120,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popover.get_child().show_all()
         self.show_all()
 
-        if len(self.players_list) < 2:
+        if not self.settings.get_boolean("show-arrow"):
             self.popup_icon.hide()
 
     def show_popup(self, *_) -> None:
@@ -189,11 +189,7 @@ class BudgieMediaPlayer(Budgie.Applet):
 
                     self.popover_ntb.remove(player)
                     del self.players_list[index]
-
                     break
-
-            if len(self.players_list) < 2:
-                self.popup_icon.hide()
 
     def settings_changed(self, _, changed_key_name: str) -> None:
         if changed_key_name == "author-name-max-length":
@@ -230,6 +226,12 @@ class BudgieMediaPlayer(Budgie.Applet):
                         self.separator_text
                     )
             return
+
+        if changed_key_name == "show-arrow":
+            if self.settings.get_boolean("show-arrow"):
+                self.popup_icon.show()
+            else:
+                self.popup_icon.hide()
 
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
