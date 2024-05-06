@@ -15,8 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import threading
-from typing import Optional, Union, Callable
-from enum import IntEnum
+from typing import Optional, Union
 from io import BytesIO
 from dataclasses import dataclass
 from urllib.parse import urlparse, ParseResult
@@ -69,6 +68,8 @@ class SingleAppPlayer(Gtk.Bin):
         self.playing: bool = False
         self.artist: Optional[list[str]] = []
         self.title: Optional[str] = ""
+        self.song_length: int = 0
+        """ song's length in seconds"""
         self.album_cover_data: AlbumCoverData = AlbumCoverData(
             cover_type=AlbumCoverType.Null,
             image_url_http=None,
@@ -88,15 +89,30 @@ class SingleAppPlayer(Gtk.Bin):
 
         start_song_metadata = self.dbus_player.get_player_property("Metadata")
         if start_song_metadata is not None:
-            new_artist = start_song_metadata.lookup_value("xesam:artist", None)
+            new_artist = start_song_metadata.lookup_value(
+                "xesam:artist", GLib.VariantType.new("as")
+            )
             if new_artist is not None:
                 self.artist = new_artist.get_strv()
-            new_title = start_song_metadata.lookup_value("xesam:title", None)
+
+            new_title = start_song_metadata.lookup_value(
+                "xesam:title", GLib.VariantType.new("s")
+            )
             if new_title is not None:
                 self.title = new_title.get_string()
+
             self._set_album_cover(
                 start_song_metadata.lookup_value("mpris:artUrl", None)
             )
+
+            new_len = start_song_metadata.lookup_value("mpris:length", None)
+            if new_len is not None:
+                new_len_int = 0
+                if new_len.is_of_type(GLib.VariantType.new("x")):
+                    new_len_int = new_len.get_int64()
+                elif new_len.is_of_type(GLib.VariantType.new("t")):
+                    new_len_int = new_len.get_uint64()
+                self.song_length = round(new_len_int / 1_000_000)
         else:
             self._set_album_cover_other()
 
@@ -187,6 +203,12 @@ class SingleAppPlayer(Gtk.Bin):
         if self.panel_view is not None:
             self.panel_view.set_element_order(new_order)
 
+    def popover_to_be_open(self):
+        pass
+
+    def popover_just_closed(self):
+        pass
+
     def playing_changed(self) -> None:
         pass
 
@@ -225,22 +247,38 @@ class SingleAppPlayer(Gtk.Bin):
     def _metadata_changed(self, metadata: GLib.Variant) -> None:
         new_artist = metadata.lookup_value("xesam:artist", GLib.VariantType.new("as"))
         new_title = metadata.lookup_value("xesam:title", GLib.VariantType.new("s"))
-        changed = False
+        new_length = metadata.lookup_value("mpris:length", GLib.VariantType.new("x"))
+        changed_art_title = False
+        changed_len = False
 
         if new_artist is not None and new_artist.get_strv() != self.artist:
             self.artist = new_artist.get_strv()
-            changed = True
+            changed_art_title = True
 
         if new_title is not None and new_title.get_string() != self.title:
             self.title = new_title.get_string()
-            changed = True
+            changed_art_title = True
 
-        if changed:
-            if self.panel_view is not None:
+        if new_length is not None:
+            new_len_int = 0
+            if new_length.is_of_type(GLib.VariantType.new("x")):
+                new_len_int = new_length.get_int64()
+            elif new_length.is_of_type(GLib.VariantType.new("t")):
+                new_len_int = new_length.get_uint64()
+
+            new_length_secs = round(new_len_int / 1_000_000)
+
+            if new_length_secs != self.song_length:
+                self.song_length = new_length_secs
+                changed_len = True
+
+        if changed_len or changed_art_title:
+            if changed_art_title and self.panel_view is not None:
                 self.panel_view.set_metadata(self.artist, self.title)
             self.metadata_changed()
 
-        self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
+        if changed_art_title:
+            self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
 
     def _can_play_changed(self, metadata: GLib.Variant) -> None:
         new_can_play = metadata.get_boolean()

@@ -17,11 +17,11 @@
 
 from SingleAppPlayer import SingleAppPlayer
 from AlbumCoverData import AlbumCoverType
-from typing import Callable
+from typing import Callable, Optional
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gio", "2.0")
+gi.require_version("GLib", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, GdkPixbuf, GLib
 
@@ -38,11 +38,12 @@ class PopupPlasmaControlView(SingleAppPlayer):
         separator_text: str,
         open_popover_func: Callable,
     ):
-
+        self.timers_running: dict[int, bool] = {}
         self.main_layout_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.info_layout_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.info_layout_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.controls_layout_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        progress_bar_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.DIALOG
@@ -54,6 +55,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.play_pause_button: Gtk.Button = Gtk.Button()
         self.go_previous_button: Gtk.Button = Gtk.Button()
         self.go_next_button: Gtk.Button = Gtk.Button()
+        self.progress_label: Gtk.Label = Gtk.Label()
+        self.progress_bar: Gtk.ProgressBar = Gtk.ProgressBar()
+
+        self.position: int = 0
+        """position of the media's playback in seconds"""
 
         SingleAppPlayer.__init__(
             self,
@@ -71,6 +77,16 @@ class PopupPlasmaControlView(SingleAppPlayer):
         # song name label
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
+
+        # song progress label
+        progress_bar_layout.pack_start(self.progress_label, False, False, 4)
+
+        # song progress bar
+        self.progress_bar.set_valign(Gtk.Align.CENTER)
+        self.progress_bar.set_show_text(False)
+        progress_bar_layout.pack_start(self.progress_bar, True, True, 4)
+
+        self._set_progress_label_and_bar()
 
         # song author label
         self.song_author_label.set_label(", ".join(self.artist))
@@ -123,6 +139,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.info_layout_hbox.pack_start(self.info_layout_vbox, False, False, 0)
         info_layout_event_box.add(self.info_layout_hbox)
         self.main_layout_box.pack_start(info_layout_event_box, True, True, 10)
+        self.main_layout_box.pack_start(progress_bar_layout, False, False, 5)
         self.controls_layout_box.set_halign(Gtk.Align.CENTER)
         self.controls_layout_box.set_spacing(5)
         self.main_layout_box.pack_start(self.controls_layout_box, False, False, 0)
@@ -139,6 +156,42 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
     def song_info_clicked(self, *_) -> None:
         self.dbus_player.call_app_method("Raise")
+
+    # overridden parent method
+
+    def popover_to_be_open(self):
+        self.dbus_player.get_player_property_non_cached(
+            "Position", self._on_ready_callback
+        )
+
+    def _on_ready_callback(self, result: Optional[GLib.Variant]) -> None:
+        if result is None:
+            self.position = 0
+            return
+
+        data = result[0]
+        self.position = round(data / 1_000_000)
+
+        timer_id = 0
+        while True:
+            if timer_id not in self.timers_running:
+                break
+            elif timer_id > 50:
+                # TODO: make tis log in logging framework
+                print(
+                    f"budgie-media-player: There are too many running timers, playerId: {self.service_name}, timers: {self.timers_running}"
+                )
+                return
+            timer_id += 1
+
+        self.timers_running.update({timer_id: True})
+        GLib.timeout_add(1000, self._timer_updating_progress, timer_id)
+        self._set_progress_label_and_bar()
+        print(self.timers_running)
+
+    def popover_just_closed(self):
+        for key in self.timers_running:
+            self.timers_running[key] = False
 
     # overridden parent method
     def metadata_changed(self) -> None:
@@ -223,6 +276,29 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.ALBUM_COVER_SIZE,
             )
 
+    def _timer_updating_progress(self, identifier: int):
+        if self.playing:
+            self.position += 1
+            self._set_progress_label_and_bar()
+
+        status = self.timers_running[identifier]
+        print(f"{identifier} -> {status}")
+        if not status:
+            del self.timers_running[identifier]
+            print(f"{identifier} -> {self.timers_running}")
+            return False
+        return True
+
     def _set_title(self, new_text: str):
         esc_text = GLib.markup_escape_text(new_text)
         self.song_name_label.set_markup(f"<b>{esc_text}</b>")
+
+    def _set_progress_label_and_bar(self):
+        len_mins, len_secs = divmod(self.song_length, 60)
+        pos_mins, pos_secs = divmod(self.position, 60)
+        self.progress_label.set_label(
+            f"{pos_mins:02}:{pos_secs:02}/{len_mins:02}:{len_secs:02}"
+        )
+        self.progress_bar.set_fraction(
+            self.position / self.song_length if self.song_length > 0 else 0
+        )

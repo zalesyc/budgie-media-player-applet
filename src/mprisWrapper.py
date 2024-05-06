@@ -18,7 +18,7 @@ from typing import Callable, Optional
 import gi
 
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio, GLib
+from gi.repository import Gio, GLib, GObject
 
 
 class MprisWrapper:
@@ -26,6 +26,7 @@ class MprisWrapper:
         object_path = "/org/mpris/MediaPlayer2"
         interface_name_player = "org.mpris.MediaPlayer2.Player"
         interface_name_app = "org.mpris.MediaPlayer2"
+        interface_name_property = "org.freedesktop.DBus.Properties"
 
         self._connected_functions: dict[str, Callable] = {}
 
@@ -49,6 +50,16 @@ class MprisWrapper:
             None,
         )
 
+        self.properties_proxy: Gio.DBusProxy = Gio.DBusProxy.new_for_bus_sync(
+            Gio.BusType.SESSION,
+            Gio.DBusProxyFlags.NONE,
+            None,
+            service_name,
+            object_path,
+            interface_name_property,
+            None,
+        )
+
         self.player_proxy.connect("g-properties-changed", self._property_changed)
 
     def player_connect(
@@ -58,6 +69,34 @@ class MprisWrapper:
 
     def get_player_property(self, property_name: str) -> Optional[GLib.Variant]:
         return self.player_proxy.get_cached_property(property_name)
+
+    def get_player_property_non_cached(
+        self,
+        property_name: str,
+        callback: Callable[[Optional[GLib.Variant]], None],
+    ) -> None:
+        self.properties_proxy.call(
+            "Get",
+            GLib.Variant("(ss)", ("org.mpris.MediaPlayer2.Player", property_name)),
+            Gio.DBusCallFlags.NONE,
+            1,
+            None,
+            self._get_player_property_callback,
+            callback,
+        )
+
+    @staticmethod
+    def _get_player_property_callback(
+        source_object: Gio.DBusProxy,
+        result: Gio.Task,
+        data: Callable[[Optional[GLib.Variant]], None],
+    ) -> None:
+        try:
+            content = source_object.call_finish(result)
+        except GLib.GError as e:
+            data(None)
+        else:
+            data(content)
 
     def get_app_property(self, property_name: str) -> Optional[GLib.Variant]:
         return self.app_proxy.get_cached_property(property_name)

@@ -60,6 +60,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.box.pack_end(self.popup_icon_event_box, False, False, 0)
 
         self.popover: Budgie.Popover = Budgie.Popover.new(self)
+        self.popover.connect("closed", self.on_popover_close)
         self.popover_manager: Budgie.PopoverManager = Budgie.PopoverManager()
         self.popover_manager.register_popover(self, self.popover)
 
@@ -124,6 +125,12 @@ class BudgieMediaPlayer(Budgie.Applet):
 
     def show_popup(self, *_) -> None:
         self.popover_manager.show_popover(self)
+        for player in self.players_list:
+            player.popover_to_be_open()
+
+    def on_popover_close(self, _):
+        for player in self.players_list:
+            player.popover_just_closed()
 
     def list_dbus_players(self) -> list[str]:
         names = self.session_bus.call_sync(
