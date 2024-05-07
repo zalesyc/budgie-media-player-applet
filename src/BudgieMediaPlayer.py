@@ -180,10 +180,18 @@ class BudgieMediaPlayer(Budgie.Applet):
             for index, player in enumerate(self.players_list):
                 if player.service_name == changes[0]:
                     if self.panel_player_index == index:
-                        self.box.remove(player)
-                        if len(self.players_list) > 0:
-                            self.panel_player_index = 0
-                            self.box.pack_start(self.players_list[0], False, False, 0)
+                        self.box.remove(player.panel_view)
+                        if len(self.players_list) > 1:
+                            self.panel_player_index = 1
+                            self.players_list[1].add_panel_view(
+                                self.author_max_len,
+                                self.name_max_len,
+                                self.separator_text,
+                                self.element_order,
+                            )
+                            self.box.pack_start(
+                                self.players_list[1].panel_view, False, False, 0
+                            )
                         else:
                             self.panel_player_index = None
 
