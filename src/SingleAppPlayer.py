@@ -63,7 +63,6 @@ class SingleAppPlayer(Gtk.Bin):
         self.author_max_len: int = author_max_len
         self.name_max_len: int = name_max_len
         self.separator_text: str = separator_text
-        self.service_name: str = service_name
 
         self.playing: bool = False
         self.artist: Optional[list[str]] = []
@@ -80,6 +79,7 @@ class SingleAppPlayer(Gtk.Bin):
         self.can_pause: bool = False
         self.can_go_previous: bool = False
         self.can_go_next: bool = False
+        self.rate: float = 1.0
 
         playing = self.dbus_player.get_player_property("PlaybackStatus").get_string()
         if playing == "Playing":
@@ -125,12 +125,16 @@ class SingleAppPlayer(Gtk.Bin):
             "CanGoNext"
         ).get_boolean()
 
+        rate = self.dbus_player.get_player_property("Rate")
+        self.rate = 1.0 if rate is None else rate.get_double()
+
         self.dbus_player.player_connect("PlaybackStatus", self._playing_changed)
         self.dbus_player.player_connect("Metadata", self._metadata_changed)
         self.dbus_player.player_connect("CanPlay", self._can_play_changed)
         self.dbus_player.player_connect("CanPause", self._can_pause_changed)
         self.dbus_player.player_connect("CanGoPrevious", self._can_go_previous_changed)
         self.dbus_player.player_connect("CanGoNext", self._can_go_next_changed)
+        self.dbus_player.player_connect("Rate", self._rate_changed)
 
     def add_panel_view(
         self,
@@ -334,6 +338,9 @@ class SingleAppPlayer(Gtk.Bin):
                 self.album_cover_changed()
 
         return False
+
+    def _rate_changed(self, new_rate: GLib.Variant):
+        self.rate = new_rate.get_double()
 
     def _set_album_cover(self, art_url_variant: GLib.Variant) -> None:
         if art_url_variant is None:

@@ -284,7 +284,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
             timer_id += 1
 
         self.timers_running.update({timer_id: True})
-        GLib.timeout_add(1000, self._timer_updating_progress, timer_id)
+        GLib.timeout_add(
+            round(1000 / self.rate), self._timer_updating_progress, timer_id
+        )
         self._set_progress_label_and_bar()
 
     def _timer_updating_progress(self, identifier: int):
