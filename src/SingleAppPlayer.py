@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import threading
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from io import BytesIO
 from dataclasses import dataclass
 from urllib.parse import urlparse, ParseResult
@@ -44,7 +44,8 @@ class SingleAppPlayer(Gtk.Bin):
     def __init__(
         self,
         service_name: str,
-        open_popover_func: callable,
+        open_popover_func: Callable,
+        favorite_clicked: Callable,
         orientation: Gtk.Orientation,
         author_max_len: int,
         name_max_len: int,
@@ -54,7 +55,8 @@ class SingleAppPlayer(Gtk.Bin):
         self._icon: Optional[Gtk.Widget] = None
         self.panel_view: Optional[PanelControlView] = None
 
-        self.open_popover_func = open_popover_func
+        self.open_popover_func: Callable = open_popover_func
+        self.favorite_clicked: Callable = favorite_clicked
         self.service_name: str = service_name
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
         self.current_download_thread: Optional[DownloadThreadData] = None
@@ -156,6 +158,11 @@ class SingleAppPlayer(Gtk.Bin):
             separator_text=separator_text,
             element_order=element_order,
         )
+        self.starred_changed()
+
+    def remove_panel_view(self) -> None:
+        self.panel_view = None
+        self.starred_changed()
 
     def get_icon(self, size: int) -> Gtk.Image:
         print(self.service_name)
@@ -234,6 +241,9 @@ class SingleAppPlayer(Gtk.Bin):
         pass
 
     def album_cover_changed(self) -> None:
+        pass
+
+    def starred_changed(self) -> None:
         pass
 
     def _playing_changed(self, status: GLib.Variant) -> None:

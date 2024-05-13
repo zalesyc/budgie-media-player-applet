@@ -85,9 +85,9 @@ class BudgieMediaPlayer(Budgie.Applet):
         )
         dbus_names = self.list_dbus_players()
 
-        self.players_list: list[PopupPlasmaControlView] = []
-        # index in players_list of the player that has the panel view
-        self.panel_player_index: Optional[int] = 0
+        self.players_list: dict[str, PopupPlasmaControlView] = {}
+        # service name of the player that has the panel view
+        self.panel_player_service_name: Optional[str] = None
         self.popover_ntb: Optional[Gtk.Notebook] = None
         self.popover_ntb = Gtk.Notebook.new()
         self.popover_ntb.set_margin_bottom(5)
@@ -97,32 +97,33 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popover_ntb.set_scrollable(True)
         self.popover.add(self.popover_ntb)
 
-        for index, dbus_name in enumerate(dbus_names):
-            self.players_list.append(
-                PopupPlasmaControlView(
-                    service_name=dbus_name,
-                    orientation=self.orientation,
-                    author_max_len=self.author_max_len,
-                    name_max_len=self.name_max_len,
-                    separator_text=self.separator_text,
-                    album_cover_size=self.popover_album_cover_size,
-                    open_popover_func=self.show_popup,
-                )
+        for dbus_name in dbus_names:
+            new_view = PopupPlasmaControlView(
+                service_name=dbus_name,
+                orientation=self.orientation,
+                author_max_len=self.author_max_len,
+                name_max_len=self.name_max_len,
+                separator_text=self.separator_text,
+                album_cover_size=self.popover_album_cover_size,
+                open_popover_func=self.show_popup,
+                favorite_clicked=self.favorite_player_clicked,
             )
-            if len(self.players_list) < 2:
-                self.players_list[-1].add_panel_view(
+            if len(self.players_list) < 1:
+                new_view.add_panel_view(
                     self.author_max_len,
                     self.name_max_len,
                     self.separator_text,
                     self.element_order,
                 )
-                self.box.pack_start(self.players_list[-1].panel_view, False, False, 0)
-                self.panel_player_index = index
+                self.box.pack_start(new_view.panel_view, False, False, 0)
+                self.panel_player_service_name = new_view.service_name
 
             self.popover_ntb.append_page(
-                self.players_list[-1],
-                self.players_list[-1].get_icon(Gtk.IconSize.MENU),
+                new_view,
+                new_view.get_icon(Gtk.IconSize.MENU),
             )
+
+            self.players_list.update({new_view.service_name: new_view})
 
         self.popover.get_child().show_all()
         self.show_all()
@@ -132,12 +133,46 @@ class BudgieMediaPlayer(Budgie.Applet):
 
     def show_popup(self, *_) -> None:
         self.popover_manager.show_popover(self)
-        for player in self.players_list:
+        for player in self.players_list.values():
             player.popover_to_be_open()
 
-    def on_popover_close(self, _):
-        for player in self.players_list:
+    def on_popover_close(self, _) -> None:
+        for player in self.players_list.values():
             player.popover_just_closed()
+
+    def favorite_player_clicked(self, service_name) -> None:
+        if len(self.players_list) <= 1:
+            return
+
+        if service_name == self.panel_player_service_name:
+            for key, value in self.players_list.items():
+                if key == service_name:
+                    continue
+
+                self.box.remove(self.players_list[service_name].panel_view)
+                self.players_list[service_name].remove_panel_view()
+                value.add_panel_view(
+                    author_max_len=self.author_max_len,
+                    title_max_len=self.name_max_len,
+                    separator_text=self.separator_text,
+                    element_order=self.element_order,
+                )
+                self.box.pack_start(value.panel_view, False, False, 0)
+                self.panel_player_service_name = value.service_name
+                return
+            return
+
+        self.box.remove(self.players_list[self.panel_player_service_name].panel_view)
+        self.players_list[self.panel_player_service_name].remove_panel_view()
+
+        self.players_list[service_name].add_panel_view(
+            author_max_len=self.author_max_len,
+            title_max_len=self.name_max_len,
+            separator_text=self.separator_text,
+            element_order=self.element_order,
+        )
+        self.box.pack_start(self.players_list[service_name].panel_view, False, False, 0)
+        self.panel_player_service_name = service_name
 
     def list_dbus_players(self) -> list[str]:
         names = self.session_bus.call_sync(
@@ -157,90 +192,87 @@ class BudgieMediaPlayer(Budgie.Applet):
         self, _, __, ___, ____, _____, changes: GLib.Variant
     ) -> None:
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
-            self.players_list.append(
-                PopupPlasmaControlView(
-                    service_name=changes[0],
-                    orientation=self.orientation,
-                    author_max_len=self.author_max_len,
-                    name_max_len=self.name_max_len,
-                    separator_text=self.separator_text,
-                    album_cover_size=self.popover_album_cover_size,
-                    open_popover_func=self.show_popup,
-                ),
+            new_view = PopupPlasmaControlView(
+                service_name=changes[0],
+                orientation=self.orientation,
+                author_max_len=self.author_max_len,
+                name_max_len=self.name_max_len,
+                separator_text=self.separator_text,
+                album_cover_size=self.popover_album_cover_size,
+                open_popover_func=self.show_popup,
+                favorite_clicked=self.favorite_player_clicked,
             )
+
             self.popover_ntb.append_page(
-                self.players_list[-1],
-                self.players_list[-1].get_icon(Gtk.IconSize.MENU),
+                new_view,
+                new_view.get_icon(Gtk.IconSize.MENU),
             )
             self.popover_ntb.show_all()
 
-            if len(self.players_list) <= 1:
-                self.panel_player_index = 0
-                self.players_list[-1].add_panel_view(
+            if len(self.players_list) < 1:
+                self.panel_player_service_name = new_view.service_name
+                new_view.add_panel_view(
                     self.author_max_len,
                     self.name_max_len,
                     self.separator_text,
                     self.element_order,
                 )
-                self.box.pack_start(self.players_list[-1].panel_view, False, False, 0)
+                self.box.pack_start(new_view.panel_view, False, False, 0)
+
+            self.players_list.update({new_view.service_name: new_view})
 
         elif not changes[2]:  # player was removed
-            for index, player in enumerate(self.players_list):
-                if player.service_name == changes[0]:
-                    if self.panel_player_index == index:
-                        self.box.remove(player.panel_view)
-                        if len(self.players_list) > 1:
-                            self.panel_player_index = 1
-                            self.players_list[1].add_panel_view(
-                                self.author_max_len,
-                                self.name_max_len,
-                                self.separator_text,
-                                self.element_order,
-                            )
-                            self.box.pack_start(
-                                self.players_list[1].panel_view, False, False, 0
-                            )
-                        else:
-                            self.panel_player_index = None
+            player_to_get_del = self.players_list.pop(changes[0], None)
+            if player_to_get_del is None:
+                return
 
-                    self.popover_ntb.remove(player)
-                    del self.players_list[index]
+            self.popover_ntb.remove(player_to_get_del)
+
+            if len(self.players_list) > 0:
+                for player in self.players_list.values():
+                    player.add_panel_view(
+                        self.author_max_len,
+                        self.name_max_len,
+                        self.separator_text,
+                        self.element_order,
+                    )
+                    self.box.pack_start(player.panel_view, False, False, 0)
+                    self.panel_player_service_name = player.service_name
                     break
+            else:
+                self.panel_player_service_name = None
 
     def settings_changed(self, _, changed_key_name: str) -> None:
         if changed_key_name == "author-name-max-length":
             self.author_max_len = self.settings.get_int(changed_key_name)
-            if len(self.players_list) > self.panel_player_index:
-                if self.players_list[self.panel_player_index].panel_view is not None:
-                    self.players_list[self.panel_player_index].set_author_max_len(
-                        self.author_max_len
-                    )
+            if (
+                player := self.players_list.get(self.panel_player_service_name, None)
+            ) is not None:
+                player.set_author_max_len(self.author_max_len)
             return
 
         if changed_key_name == "media-title-max-length":
             self.name_max_len = self.settings.get_int(changed_key_name)
-            if len(self.players_list) > self.panel_player_index:
-                if self.players_list[self.panel_player_index].panel_view is not None:
-                    self.players_list[self.panel_player_index].set_title_max_len(
-                        self.name_max_len
-                    )
+            if (
+                player := self.players_list.get(self.panel_player_service_name, None)
+            ) is not None:
+                player.set_title_max_len(self.name_max_len)
+            return
 
         if changed_key_name == "element-order":
             self.element_order = self.settings.get_strv(changed_key_name)
-            if len(self.players_list) > self.panel_player_index:
-                if self.players_list[self.panel_player_index].panel_view is not None:
-                    self.players_list[self.panel_player_index].set_element_order(
-                        self.element_order
-                    )
+            if (
+                player := self.players_list.get(self.panel_player_service_name, None)
+            ) is not None:
+                player.set_element_order(self.element_order)
             return
 
         if changed_key_name == "separator-text":
             self.separator_text = self.settings.get_string("separator-text")
-            if len(self.players_list) > self.panel_player_index:
-                if self.players_list[self.panel_player_index].panel_view is not None:
-                    self.players_list[self.panel_player_index].set_separator_text(
-                        self.separator_text
-                    )
+            if (
+                player := self.players_list.get(self.panel_player_service_name, None)
+            ) is not None:
+                player.set_separator_text(self.separator_text)
             return
 
         if changed_key_name == "show-arrow":
@@ -257,7 +289,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             return
 
         if changed_key_name == "popover-album-cover-size":
-            for player in self.players_list:
+            for player in self.players_list.values():
                 player.set_popover_album_cover_size(
                     self.settings.get_uint("popover-album-cover-size")
                 )
@@ -266,8 +298,10 @@ class BudgieMediaPlayer(Budgie.Applet):
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
     ) -> None:
-        if len(self.players_list) > self.panel_player_index:
-            self.players_list[self.panel_player_index].panel_size_changed(icon_size)
+        if (
+            player := self.players_list.get(self.panel_player_service_name, None)
+        ) is not None:
+            player.panel_size_changed(icon_size)
 
     def do_panel_position_changed(self, position: Budgie.PanelPosition) -> None:
         if position in {Budgie.PanelPosition.LEFT, Budgie.PanelPosition.RIGHT}:
@@ -276,10 +310,10 @@ class BudgieMediaPlayer(Budgie.Applet):
             self.orientation = Gtk.Orientation.HORIZONTAL
 
         self.box.set_orientation(self.orientation)
-        if len(self.players_list) > self.panel_player_index:
-            self.players_list[self.panel_player_index].panel_orientation_changed(
-                self.orientation
-            )
+        if (
+            player := self.players_list.get(self.panel_player_service_name, None)
+        ) is not None:
+            player.panel_orientation_changed(self.orientation)
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""

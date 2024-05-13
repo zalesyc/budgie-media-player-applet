@@ -38,6 +38,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         separator_text: str,
         album_cover_size: int,
         open_popover_func: Callable,
+        favorite_clicked: Callable,
     ):
         self.album_cover_size: int = album_cover_size
 
@@ -59,6 +60,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.play_pause_button: Gtk.Button = Gtk.Button()
         self.go_previous_button: Gtk.Button = Gtk.Button()
         self.go_next_button: Gtk.Button = Gtk.Button()
+        self.star_button: Gtk.Button = Gtk.Button()
         self.progress_label: Gtk.Label = Gtk.Label()
         self.progress_bar: Gtk.ProgressBar = Gtk.ProgressBar()
 
@@ -69,6 +71,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
             self,
             service_name,
             open_popover_func,
+            favorite_clicked,
             orientation,
             author_max_len,
             name_max_len,
@@ -140,6 +143,17 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.go_next_button.connect("pressed", self.next_clicked)
         self.controls_layout_box.pack_start(self.go_next_button, False, False, 0)
 
+        # star button
+        self.star_button.set_image(
+            Gtk.Image.new_from_icon_name(
+                "non-starred-symbolic",
+                Gtk.IconSize.MENU,
+            )
+        )
+        self.star_button.set_relief(Gtk.ReliefStyle.NONE)
+        self.star_button.connect("pressed", self.starred_clicked)
+        self.controls_layout_box.pack_start(self.star_button, False, False, 0)
+
         self.set_hexpand(True)
 
         info_layout_event_box = Gtk.EventBox()
@@ -170,6 +184,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def song_info_clicked(self, *_) -> None:
         self.dbus_player.call_app_method("Raise")
 
+    def starred_clicked(self, *_) -> None:
+        self.favorite_clicked(self.service_name)
+
     def set_popover_album_cover_size(self, new_size: int) -> None:
         self.album_cover_size = new_size
         self.album_cover_changed()
@@ -181,6 +198,18 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def popover_just_closed(self):
         for key in self.timers_running:
             self.timers_running[key] = False
+
+    def starred_changed(self) -> None:
+        self.star_button.set_image(
+            Gtk.Image.new_from_icon_name(
+                (
+                    "non-starred-symbolic"
+                    if self.panel_view is None
+                    else "starred-symbolic"
+                ),
+                Gtk.IconSize.MENU,
+            )
+        )
 
     # overridden parent method
     def metadata_changed(self) -> None:
