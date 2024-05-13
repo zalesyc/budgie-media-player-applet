@@ -23,12 +23,12 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
+gi.require_version("Pango", "1.0")
 from gi.repository import Gtk, GdkPixbuf, GLib
+from gi.repository.Pango import EllipsizeMode
 
 
 class PopupPlasmaControlView(SingleAppPlayer):
-    ALBUM_COVER_SIZE = 96
-
     def __init__(
         self,
         service_name: str,
@@ -36,11 +36,15 @@ class PopupPlasmaControlView(SingleAppPlayer):
         author_max_len: int,
         name_max_len: int,
         separator_text: str,
+        album_cover_size: int,
         open_popover_func: Callable,
     ):
+        self.album_cover_size: int = album_cover_size
+
         self.timers_running: dict[int, bool] = {}
         self.main_layout_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.info_layout_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.info_layout_hbox.set_homogeneous(True)
         self.info_layout_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.controls_layout_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         progress_bar_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -75,6 +79,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.info_layout_hbox.pack_start(self.album_cover, False, False, 0)
 
         # song name label
+        self.song_name_label.set_max_width_chars(1)
+        self.song_name_label.set_hexpand(True)
+        self.song_name_label.set_ellipsize(EllipsizeMode.END)
+        self.song_name_label.set_
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
@@ -89,6 +97,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self._set_progress_label_and_bar()
 
         # song author label
+        self.song_author_label.set_max_width_chars(1)
+        self.song_author_label.set_hexpand(True)
+        self.song_author_label.set_ellipsize(EllipsizeMode.END)
         self.song_author_label.set_label(", ".join(self.artist))
         self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
 
@@ -130,19 +141,22 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.go_next_button.connect("pressed", self.next_clicked)
         self.controls_layout_box.pack_start(self.go_next_button, False, False, 0)
 
+        self.set_hexpand(True)
+
         info_layout_event_box = Gtk.EventBox()
         info_layout_event_box.connect("button-press-event", self.song_info_clicked)
-        self.main_layout_box.set_halign(Gtk.Align.CENTER)
-        self.info_layout_hbox.set_spacing(10)
-        self.info_layout_vbox.set_halign(Gtk.Align.START)
-        self.info_layout_vbox.set_valign(Gtk.Align.CENTER)
-        self.info_layout_hbox.pack_start(self.info_layout_vbox, False, False, 0)
         info_layout_event_box.add(self.info_layout_hbox)
-        self.main_layout_box.pack_start(info_layout_event_box, True, True, 10)
-        self.main_layout_box.pack_start(progress_bar_layout, False, False, 5)
+
+        self.info_layout_hbox.set_spacing(10)
         self.controls_layout_box.set_halign(Gtk.Align.CENTER)
         self.controls_layout_box.set_spacing(5)
+        self.info_layout_vbox.set_valign(Gtk.Align.CENTER)
+
+        self.info_layout_hbox.pack_start(self.info_layout_vbox, True, True, 0)
+        self.main_layout_box.pack_start(info_layout_event_box, True, True, 10)
+        self.main_layout_box.pack_start(progress_bar_layout, False, False, 5)
         self.main_layout_box.pack_start(self.controls_layout_box, False, False, 0)
+
         self.add(self.main_layout_box)
 
     def on_play_pause_pressed(self, *_):
@@ -157,8 +171,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def song_info_clicked(self, *_) -> None:
         self.dbus_player.call_app_method("Raise")
 
-    # overridden parent method
+    def set_popover_album_cover_size(self, new_size: int) -> None:
+        self.album_cover_size = new_size
+        self.album_cover_changed()
 
+    # overridden parent method
     def popover_to_be_open(self):
         self._create_timer()
 
@@ -222,20 +239,20 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
                     int(
                         (
-                            self.ALBUM_COVER_SIZE
+                            self.album_cover_size
                             / self.album_cover_data.song_cover_pixbuf.get_height()
                         )
                         * self.album_cover_data.song_cover_pixbuf.get_width()
                     ),
-                    self.ALBUM_COVER_SIZE,
+                    self.album_cover_size,
                     GdkPixbuf.InterpType.BILINEAR,
                 )
             else:
                 resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
-                    self.ALBUM_COVER_SIZE,
+                    self.album_cover_size,
                     int(
                         (
-                            self.ALBUM_COVER_SIZE
+                            self.album_cover_size
                             / self.album_cover_data.song_cover_pixbuf.get_width()
                         )
                         * self.album_cover_data.song_cover_pixbuf.get_height()
@@ -246,13 +263,14 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
         elif self.album_cover_data.cover_type == AlbumCoverType.Gicon:
             self.album_cover.set_from_gicon(
-                self.album_cover_data.song_cover_other, self.ALBUM_COVER_SIZE
+                self.album_cover_data.song_cover_other,
+                Gtk.IconSize.DIALOG,
             )
 
         elif self.album_cover_data.cover_type == AlbumCoverType.IconName:
             self.album_cover.set_from_icon_name(
                 self.album_cover_data.song_cover_other,
-                self.ALBUM_COVER_SIZE,
+                Gtk.IconSize.DIALOG,
             )
 
     def _create_timer(self):

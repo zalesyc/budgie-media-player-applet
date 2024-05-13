@@ -27,5 +27,20 @@
             <description>Whether to show the arrow, which opens the popover.</description>
             <default>false</default>
         </key>
+        <key type="u" name="popover-width">
+            <summary>The width of the popover</summary>
+            <description>The width of the popover in px.</description>
+            <default>300</default>
+        </key>
+        <key type="u" name="popover-height">
+            <summary>The height of the popover</summary>
+            <description>The height of the popover in px.</description>
+            <default>300</default>
+        </key>
+        <key type="u" name="popover-album-cover-size">
+            <summary>Size of the album cover in the popover</summary>
+            <description>Size of the album cover's bigger side in px.</description>
+            <default>100</default>
+        </key>
     </schema>
 </schemalist>

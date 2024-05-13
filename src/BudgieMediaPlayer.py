@@ -47,6 +47,11 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.name_max_len: int = self.settings.get_int("media-title-max-length")
         self.element_order: list[str] = self.settings.get_strv("element-order")
         self.separator_text: str = self.settings.get_string("separator-text")
+        self.popover_width: int = self.settings.get_uint("popover-width")
+        self.popover_height: int = self.settings.get_uint("popover-height")
+        self.popover_album_cover_size: int = self.settings.get_uint(
+            "popover-album-cover-size"
+        )
 
         self.box: Gtk.Box = Gtk.Box(spacing=10)
         self.add(self.box)
@@ -60,6 +65,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.box.pack_end(self.popup_icon_event_box, False, False, 0)
 
         self.popover: Budgie.Popover = Budgie.Popover.new(self)
+        self.popover.set_size_request(self.popover_width, self.popover_height)
         self.popover.connect("closed", self.on_popover_close)
         self.popover_manager: Budgie.PopoverManager = Budgie.PopoverManager()
         self.popover_manager.register_popover(self, self.popover)
@@ -99,6 +105,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                     author_max_len=self.author_max_len,
                     name_max_len=self.name_max_len,
                     separator_text=self.separator_text,
+                    album_cover_size=self.popover_album_cover_size,
                     open_popover_func=self.show_popup,
                 )
             )
@@ -157,6 +164,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                     author_max_len=self.author_max_len,
                     name_max_len=self.name_max_len,
                     separator_text=self.separator_text,
+                    album_cover_size=self.popover_album_cover_size,
                     open_popover_func=self.show_popup,
                 ),
             )
@@ -240,6 +248,20 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.popup_icon.show()
             else:
                 self.popup_icon.hide()
+            return
+
+        if changed_key_name in {"popover-width", "popover-height"}:
+            self.popover_width = self.settings.get_uint("popover-width")
+            self.popover_height = self.settings.get_uint("popover-height")
+            self.popover.set_size_request(self.popover_width, self.popover_height)
+            return
+
+        if changed_key_name == "popover-album-cover-size":
+            for player in self.players_list:
+                player.set_popover_album_cover_size(
+                    self.settings.get_uint("popover-album-cover-size")
+                )
+            return
 
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int

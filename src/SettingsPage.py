@@ -63,6 +63,7 @@ class SettingsPage(Gtk.Box):
 class MainPage(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
         Gtk.Grid.__init__(self)
+        self.set_column_homogeneous(False)
         self.set_column_spacing(10)
         self.set_row_spacing(10)
 
@@ -73,31 +74,31 @@ class MainPage(Gtk.Grid):
         self.max_len_title.set_markup("<b>Maximum Length of:</b>")
         self.max_len_title.set_halign(Gtk.Align.START)
 
-        (
-            self.name_max_len_label,
-            self.name_max_len_spin_button,
-        ) = self._combobox_label_init(
-            "Media's title:",
-            "Maximum length of the playing media's title (in characters)",
-            "media-title-max-length",
+        self.name_max_len_label, self.name_max_len_spin_button = (
+            self._combobox_label_init(
+                "Media's title:",
+                "Maximum length of the playing media's title (in characters)",
+                "media-title-max-length",
+            )
         )
-        self.name_max_len_spin_button.connect(
-            "value_changed", self.name_max_len_spin_box_changed
+        # self.name_max_len_spin_button.connect(
+        #     "value_changed", self.name_max_len_spin_box_changed
+        # )
+
+        self.author_max_len_label, self.author_max_len_spin_button = (
+            self._combobox_label_init(
+                "Author's name:",
+                "Maximum length of author's name (in characters)",
+                "author-name-max-length",
+            )
         )
 
-        (
-            self.author_max_len_label,
-            self.author_max_len_spin_button,
-        ) = self._combobox_label_init(
-            "Author's name:",
-            "Maximum length of author's name (in characters)",
-            "author-name-max-length",
-        )
-        self.author_max_len_spin_button.connect(
-            "value_changed", self.author_max_len_spin_box_changed
-        )
+        # self.author_max_len_spin_button.connect(
+        #     "value_changed", self.author_max_len_spin_box_changed
+        # )
 
         separator_text_label = Gtk.Label.new("Separator:")
+        separator_text_label.set_hexpand(True)
         separator_text_label.set_halign(Gtk.Align.START)
         self.separator_combobox: Gtk.ComboBoxText = Gtk.ComboBoxText.new()
         available_separators = ("-", ":", "·")
@@ -117,6 +118,35 @@ class MainPage(Gtk.Grid):
         self.show_arrow_switch.set_halign(Gtk.Align.END)
         self.show_arrow_switch.connect("state_set", self.show_arrow_changed)
 
+        popover_width_label, self.popover_width_combobox = self._combobox_label_init(
+            "Popup Width:",
+            "Width of the popup in px",
+            "popover-width",
+            80,
+            2000,
+            use_uint=True,
+        )
+
+        popover_height_label, self.popover_height_combobox = self._combobox_label_init(
+            "Popup Height:",
+            "Height of the popup in px",
+            "popover-height",
+            80,
+            2000,
+            use_uint=True,
+        )
+
+        popover_album_cover_size_label, self.popover_album_cover_size_combobox = (
+            self._combobox_label_init(
+                "Popup album cover size: ",
+                "Size of the album cover's bigger side in px.",
+                "popover-album-cover-size",
+                20,
+                1000,
+                use_uint=True,
+            )
+        )
+
         self.attach(self.max_len_title, 0, 0, 2, 1)
         self.attach(self.name_max_len_label, 0, 1, 1, 1)
         self.attach(self.name_max_len_spin_button, 1, 1, 1, 1)
@@ -127,6 +157,13 @@ class MainPage(Gtk.Grid):
         self.attach(self.separator_combobox, 1, 4, 1, 1)
         self.attach(show_arrow_label, 0, 5, 1, 1)
         self.attach(self.show_arrow_switch, 1, 5, 1, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
+        self.attach(popover_width_label, 0, 7, 1, 1)
+        self.attach(self.popover_width_combobox, 1, 7, 1, 1)
+        self.attach(popover_height_label, 0, 8, 1, 1)
+        self.attach(self.popover_height_combobox, 1, 8, 1, 1)
+        self.attach(popover_album_cover_size_label, 0, 9, 1, 1)
+        self.attach(self.popover_album_cover_size_combobox, 1, 9, 1, 1)
 
         self.show_all()
 
@@ -164,14 +201,35 @@ class MainPage(Gtk.Grid):
             return
 
     def _combobox_label_init(
-        self, label_text, tooltip_text, spin_button_settings_property
+        self,
+        label_text,
+        tooltip_text,
+        spin_button_settings_property,
+        range_start=5,
+        range_end=100,
+        use_uint=False,
     ):
         label = Gtk.Label(label=label_text)
         label.set_halign(Gtk.Align.START)
-        label.set_hexpand(True)
         label.set_tooltip_text(tooltip_text)
-        spin_button = Gtk.SpinButton.new_with_range(5, 100, 1)
-        spin_button.set_value(self.settings.get_int(spin_button_settings_property))
+        spin_button = Gtk.SpinButton.new_with_range(range_start, range_end, 1)
+        spin_button.set_value(
+            self.settings.get_uint(spin_button_settings_property)
+            if use_uint
+            else self.settings.get_int(spin_button_settings_property)
+        )
+        spin_button.connect(
+            "value_changed",
+            lambda widget: (
+                self.settings.set_uint(
+                    spin_button_settings_property, widget.get_value_as_int()
+                )
+                if use_uint
+                else self.settings.set_int(
+                    spin_button_settings_property, widget.get_value_as_int()
+                )
+            ),
+        )
         return label, spin_button
 
 

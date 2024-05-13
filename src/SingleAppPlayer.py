@@ -58,7 +58,6 @@ class SingleAppPlayer(Gtk.Bin):
         self.service_name: str = service_name
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
         self.current_download_thread: Optional[DownloadThreadData] = None
-        self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = orientation
         self.author_max_len: int = author_max_len
         self.name_max_len: int = name_max_len
@@ -206,6 +205,9 @@ class SingleAppPlayer(Gtk.Bin):
     def set_element_order(self, new_order: list[str]):
         if self.panel_view is not None:
             self.panel_view.set_element_order(new_order)
+
+    def set_popover_album_cover_size(self, new_size: int) -> None:
+        pass
 
     def popover_to_be_open(self):
         pass
