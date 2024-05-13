@@ -82,7 +82,6 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.song_name_label.set_max_width_chars(1)
         self.song_name_label.set_hexpand(True)
         self.song_name_label.set_ellipsize(EllipsizeMode.END)
-        self.song_name_label.set_
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
