@@ -148,6 +148,7 @@ class SingleAppPlayer(Gtk.Bin):
             dbus_player=self.dbus_player,
             title=self.title,
             artist=self.artist,
+            album_cover=self.album_cover_data,
             playing=self.playing,
             can_play_or_pause=(self.can_play or self.can_pause),
             can_go_previous=self.can_go_previous,
@@ -158,14 +159,21 @@ class SingleAppPlayer(Gtk.Bin):
             separator_text=separator_text,
             element_order=element_order,
         )
+
         self.starred_changed()
 
     def remove_panel_view(self) -> None:
+        if self.panel_view is None:
+            print(
+                "budgie-media-player-applet: trying to remove panel_view, "
+                f"which is already None, player id: {self.service_name}"
+            )
+            return
+        self.panel_view.destroy()
         self.panel_view = None
         self.starred_changed()
 
     def get_icon(self, size: int) -> Gtk.Image:
-        print(self.service_name)
         desktop_file_name_variant = self.dbus_player.get_app_property("DesktopEntry")
         if desktop_file_name_variant is not None:
             desktop_file_name = desktop_file_name_variant.get_string()
@@ -183,9 +191,6 @@ class SingleAppPlayer(Gtk.Bin):
                         return Gtk.Image.new_from_gicon(desktop_icon, size)
 
         return Gtk.Image.new_from_icon_name("multimedia-player-symbolic", size)
-
-    def remove_panel_view(self) -> None:
-        self.panel_view = None
 
     def panel_size_changed(self, new_size: int):
         if self.panel_view is not None:

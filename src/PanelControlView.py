@@ -39,6 +39,7 @@ class PanelControlView(Gtk.Box):
         dbus_player: MprisWrapper,
         title: str,
         artist: list[str],
+        album_cover: Optional[AlbumCoverData],
         playing: bool,
         can_play_or_pause: bool,
         can_go_previous: bool,
@@ -77,6 +78,8 @@ class PanelControlView(Gtk.Box):
         self.available_elements.update(
             {"album_cover": Element(album_cover_event_box, 5)}
         )
+        if (album_cover is not None) and album_cover.cover_type != AlbumCoverType.Null:
+            self.set_album_cover(album_cover)
 
         # song_name
         song_name_event_box = Gtk.EventBox()

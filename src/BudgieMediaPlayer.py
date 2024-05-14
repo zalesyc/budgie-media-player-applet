@@ -149,7 +149,6 @@ class BudgieMediaPlayer(Budgie.Applet):
                 if key == service_name:
                     continue
 
-                self.box.remove(self.players_list[service_name].panel_view)
                 self.players_list[service_name].remove_panel_view()
                 value.add_panel_view(
                     author_max_len=self.author_max_len,
@@ -162,7 +161,6 @@ class BudgieMediaPlayer(Budgie.Applet):
                 return
             return
 
-        self.box.remove(self.players_list[self.panel_player_service_name].panel_view)
         self.players_list[self.panel_player_service_name].remove_panel_view()
 
         self.players_list[service_name].add_panel_view(
@@ -227,6 +225,11 @@ class BudgieMediaPlayer(Budgie.Applet):
                 return
 
             self.popover_ntb.remove(player_to_get_del)
+
+            if player_to_get_del.panel_view is None:
+                return
+
+            player_to_get_del.remove_panel_view()
 
             if len(self.players_list) > 0:
                 for player in self.players_list.values():
