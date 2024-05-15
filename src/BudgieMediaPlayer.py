@@ -118,10 +118,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.box.pack_start(new_view.panel_view, False, False, 0)
                 self.panel_player_service_name = new_view.service_name
 
-            self.popover_ntb.append_page(
-                new_view,
-                new_view.get_icon(Gtk.IconSize.MENU),
-            )
+            self.popover_ntb.append_page(new_view, new_view.icon)
 
             self.players_list.update({new_view.service_name: new_view})
 
@@ -201,10 +198,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                 favorite_clicked=self.favorite_player_clicked,
             )
 
-            self.popover_ntb.append_page(
-                new_view,
-                new_view.get_icon(Gtk.IconSize.MENU),
-            )
+            self.popover_ntb.append_page(new_view, new_view.icon)
             self.popover_ntb.show_all()
 
             if len(self.players_list) < 1:

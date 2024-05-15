@@ -41,6 +41,8 @@ class DownloadThreadData:
 
 
 class SingleAppPlayer(Gtk.Bin):
+    ICON_SIZE = Gtk.IconSize.MENU
+
     def __init__(
         self,
         service_name: str,
@@ -52,7 +54,6 @@ class SingleAppPlayer(Gtk.Bin):
         separator_text: str,
     ):
         super().__init__()
-        self._icon: Optional[Gtk.Widget] = None
         self.panel_view: Optional[PanelControlView] = None
 
         self.open_popover_func: Callable = open_popover_func
@@ -129,6 +130,9 @@ class SingleAppPlayer(Gtk.Bin):
         rate = self.dbus_player.get_player_property("Rate")
         self.rate = 1.0 if rate is None else rate.get_double()
 
+        self.icon: Gtk.Image = Gtk.Image()
+        self._set_icon(self.dbus_player.get_app_property("DesktopEntry"))
+
         self.dbus_player.player_connect("PlaybackStatus", self._playing_changed)
         self.dbus_player.player_connect("Metadata", self._metadata_changed)
         self.dbus_player.player_connect("CanPlay", self._can_play_changed)
@@ -136,6 +140,7 @@ class SingleAppPlayer(Gtk.Bin):
         self.dbus_player.player_connect("CanGoPrevious", self._can_go_previous_changed)
         self.dbus_player.player_connect("CanGoNext", self._can_go_next_changed)
         self.dbus_player.player_connect("Rate", self._rate_changed)
+        self.dbus_player.app_connect("DesktopEntry", self._set_icon)
 
     def add_panel_view(
         self,
@@ -172,25 +177,6 @@ class SingleAppPlayer(Gtk.Bin):
         self.panel_view.destroy()
         self.panel_view = None
         self.starred_changed()
-
-    def get_icon(self, size: int) -> Gtk.Image:
-        desktop_file_name_variant = self.dbus_player.get_app_property("DesktopEntry")
-        if desktop_file_name_variant is not None:
-            desktop_file_name = desktop_file_name_variant.get_string()
-
-            try:
-                desktop_app_info = Gio.DesktopAppInfo.new(
-                    desktop_file_name + ".desktop"
-                )
-            except TypeError:
-                pass
-            else:
-                if desktop_app_info is not None:
-                    desktop_icon = desktop_app_info.get_icon()
-                    if desktop_icon is not None:
-                        return Gtk.Image.new_from_gicon(desktop_icon, size)
-
-        return Gtk.Image.new_from_icon_name("multimedia-player-symbolic", size)
 
     def panel_size_changed(self, new_size: int):
         if self.panel_view is not None:
@@ -477,3 +463,22 @@ class SingleAppPlayer(Gtk.Bin):
             return None
 
         return pixbuf
+
+    def _set_icon(self, desktop_file_name: GLib.Variant) -> None:
+        if desktop_file_name is not None:
+            desktop_file_name = desktop_file_name.get_string()
+
+            try:
+                desktop_app_info = Gio.DesktopAppInfo.new(
+                    desktop_file_name + ".desktop"
+                )
+            except TypeError:
+                pass
+            else:
+                if desktop_app_info is not None:
+                    desktop_icon = desktop_app_info.get_icon()
+                    if desktop_icon is not None:
+                        self.icon.set_from_gicon(desktop_icon, self.ICON_SIZE)
+                        return
+
+        self.icon.set_from_icon_name("multimedia-player-symbolic", self.ICON_SIZE)

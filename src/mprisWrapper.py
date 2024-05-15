@@ -18,7 +18,7 @@ from typing import Callable, Optional
 import gi
 
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio, GLib, GObject
+from gi.repository import Gio, GLib
 
 
 class MprisWrapper:
@@ -28,7 +28,8 @@ class MprisWrapper:
         interface_name_app = "org.mpris.MediaPlayer2"
         interface_name_property = "org.freedesktop.DBus.Properties"
 
-        self._connected_functions: dict[str, Callable] = {}
+        self._connected_functions_player: dict[str, Callable] = {}
+        self._connected_functions_app: dict[str, Callable] = {}
 
         self.player_proxy: Gio.DBusProxy = Gio.DBusProxy.new_for_bus_sync(
             Gio.BusType.SESSION,
@@ -60,12 +61,18 @@ class MprisWrapper:
             None,
         )
 
-        self.player_proxy.connect("g-properties-changed", self._property_changed)
+        self.player_proxy.connect("g-properties-changed", self._player_property_changed)
+        self.app_proxy.connect("g-properties-changed", self._app_property_changed)
 
     def player_connect(
         self, property_name: str, func: Callable[[GLib.Variant], None]
     ) -> None:
-        self._connected_functions.update({property_name: func})
+        self._connected_functions_player.update({property_name: func})
+
+    def app_connect(
+        self, property_name: str, func: Callable[[GLib.Variant], None]
+    ) -> None:
+        self._connected_functions_app.update({property_name: func})
 
     def get_player_property(self, property_name: str) -> Optional[GLib.Variant]:
         return self.player_proxy.get_cached_property(property_name)
@@ -93,7 +100,7 @@ class MprisWrapper:
     ) -> None:
         try:
             content = source_object.call_finish(result)
-        except GLib.GError as e:
+        except GLib.GError:
             data(None)
         else:
             data(content)
@@ -125,14 +132,22 @@ class MprisWrapper:
             callback=callback,
         )
 
-    def _property_changed(
-        self, proxy: Gio.DBusProxy, changed_properties: GLib.Variant, *args
+    def _player_property_changed(
+        self, _, changed_properties: GLib.Variant, *__
     ) -> None:
-        for key in self._connected_functions:
+        for key, func in self._connected_functions_player.items():
             property_value = changed_properties.lookup_value(key, None)
             if property_value is None:
                 continue
-            func = self._connected_functions.get(key)
+            if func is None:
+                continue
+            func(property_value)
+
+    def _app_property_changed(self, _, changed_properties: GLib.Variant, *__) -> None:
+        for key, func in self._connected_functions_app.items():
+            property_value = changed_properties.lookup_value(key, None)
+            if property_value is None:
+                continue
             if func is None:
                 continue
             func(property_value)
