@@ -69,9 +69,9 @@ class MainPage(Gtk.Grid):
         self.settings: Gio.Settings = settings
         self.settings.connect("changed", self.settings_changed)
 
-        self.max_len_title: Gtk.Label = Gtk.Label()
-        self.max_len_title.set_markup("<b>Maximum Length of:</b>")
-        self.max_len_title.set_halign(Gtk.Align.START)
+        max_len_title: Gtk.Label = Gtk.Label()
+        max_len_title.set_markup("<b>Maximum Length of:</b>")
+        max_len_title.set_halign(Gtk.Align.START)
 
         self.name_max_len_label, self.name_max_len_spin_button = (
             self._combobox_label_init(
@@ -146,7 +146,13 @@ class MainPage(Gtk.Grid):
             )
         )
 
-        self.attach(self.max_len_title, 0, 0, 2, 1)
+        size_info_label = Gtk.Label(
+            label="Note: if the selected album cover size is larger than "
+            "the popup dimensions the popup will be automatically expanded",
+            wrap=True,
+        )
+
+        self.attach(max_len_title, 0, 0, 2, 1)
         self.attach(self.name_max_len_label, 0, 1, 1, 1)
         self.attach(self.name_max_len_spin_button, 1, 1, 1, 1)
         self.attach(self.author_max_len_label, 0, 2, 1, 1)
@@ -163,6 +169,7 @@ class MainPage(Gtk.Grid):
         self.attach(self.popover_height_combobox, 1, 8, 1, 1)
         self.attach(popover_album_cover_size_label, 0, 9, 1, 1)
         self.attach(self.popover_album_cover_size_combobox, 1, 9, 1, 1)
+        self.attach(size_info_label, 0, 10, 2, 1)
 
         self.show_all()
 
