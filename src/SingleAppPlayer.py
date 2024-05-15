@@ -130,7 +130,14 @@ class SingleAppPlayer(Gtk.Bin):
         rate = self.dbus_player.get_player_property("Rate")
         self.rate = 1.0 if rate is None else rate.get_double()
 
-        self.icon: Gtk.Image = Gtk.Image()
+        app_name = ""
+        if (app_name_var := self.dbus_player.get_app_property("Identity")) is not None:
+            app_name = GLib.markup_escape_text(app_name_var.get_string())
+
+        self.icon: Gtk.Image = Gtk.Image(
+            tooltip_markup=f"<b>{app_name}</b>"
+            f" - {GLib.markup_escape_text(self.service_name)}"
+        )
         self._set_icon(self.dbus_player.get_app_property("DesktopEntry"))
 
         self.dbus_player.player_connect("PlaybackStatus", self._playing_changed)
