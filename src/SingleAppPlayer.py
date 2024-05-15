@@ -46,8 +46,8 @@ class SingleAppPlayer(Gtk.Bin):
     def __init__(
         self,
         service_name: str,
-        open_popover_func: Callable,
-        favorite_clicked: Callable,
+        open_popover_func: Callable[[], None],
+        favorite_clicked: Callable[[str], None],
         orientation: Gtk.Orientation,
         author_max_len: int,
         name_max_len: int,
@@ -83,11 +83,13 @@ class SingleAppPlayer(Gtk.Bin):
         self.can_go_next: bool = False
         self.rate: float = 1.0
 
-        playing = self.dbus_player.get_player_property("PlaybackStatus").get_string()
-        if playing == "Playing":
-            self.playing = True
-        elif playing == "Paused":
-            self.playing = False
+        if (
+            playing := self.dbus_player.get_player_property("PlaybackStatus")
+        ) is not None:
+            if playing.get_string() == "Playing":
+                self.playing = True
+            elif playing.get_string() == "Paused":
+                self.playing = False
 
         start_song_metadata = self.dbus_player.get_player_property("Metadata")
         if start_song_metadata is not None:
@@ -118,14 +120,21 @@ class SingleAppPlayer(Gtk.Bin):
         else:
             self._set_album_cover_other()
 
-        self.can_play = self.dbus_player.get_player_property("CanPlay").get_boolean()
-        self.can_pause = self.dbus_player.get_player_property("CanPlay").get_boolean()
-        self.can_go_previous = self.dbus_player.get_player_property(
-            "CanGoPrevious"
-        ).get_boolean()
-        self.can_go_next = self.dbus_player.get_player_property(
-            "CanGoNext"
-        ).get_boolean()
+        if (can_play := self.dbus_player.get_player_property("CanPlay")) is not None:
+            self.can_play = can_play.get_boolean()
+
+        if (can_pause := self.dbus_player.get_player_property("CanPause")) is not None:
+            self.can_pause = can_pause.get_boolean()
+
+        if (
+            can_go_previous := self.dbus_player.get_player_property("CanGoPrevious")
+        ) is not None:
+            self.can_go_previous = can_go_previous.get_boolean()
+
+        if (
+            can_go_next := self.dbus_player.get_player_property("CanGoNext")
+        ) is not None:
+            self.can_go_next = can_go_next.get_boolean()
 
         rate = self.dbus_player.get_player_property("Rate")
         self.rate = 1.0 if rate is None else rate.get_double()
@@ -185,39 +194,39 @@ class SingleAppPlayer(Gtk.Bin):
         self.panel_view = None
         self.starred_changed()
 
-    def panel_size_changed(self, new_size: int):
+    def panel_size_changed(self, new_size: int) -> None:
         if self.panel_view is not None:
             self.panel_view.panel_size_changed(new_size, self.album_cover_data)
 
-    def panel_orientation_changed(self, new_orientation: Gtk.Orientation):
+    def panel_orientation_changed(self, new_orientation: Gtk.Orientation) -> None:
         if self.panel_view is not None:
             self.panel_view.set_orientation(new_orientation)
 
-    def set_author_max_len(self, new_length: int):
+    def set_author_max_len(self, new_length: int) -> None:
         if self.panel_view is not None:
             self.panel_view.author_max_len = new_length
             self.panel_view.set_metadata(self.artist, self.title)
 
-    def set_title_max_len(self, new_length: int):
+    def set_title_max_len(self, new_length: int) -> None:
         if self.panel_view is not None:
             self.panel_view.name_max_len = new_length
             self.panel_view.set_metadata(self.artist, self.title)
 
-    def set_separator_text(self, new_separator: str):
+    def set_separator_text(self, new_separator: str) -> None:
         if self.panel_view is not None:
             self.panel_view.set_separator_text(new_separator)
 
-    def set_element_order(self, new_order: list[str]):
+    def set_element_order(self, new_order: list[str]) -> None:
         if self.panel_view is not None:
             self.panel_view.set_element_order(new_order)
 
     def set_popover_album_cover_size(self, new_size: int) -> None:
         pass
 
-    def popover_to_be_open(self):
+    def popover_to_be_open(self) -> None:
         pass
 
-    def popover_just_closed(self):
+    def popover_just_closed(self) -> None:
         pass
 
     def playing_changed(self) -> None:
@@ -331,7 +340,7 @@ class SingleAppPlayer(Gtk.Bin):
 
     def _album_cover_changed(
         self, cover: Union[GdkPixbuf.Pixbuf, Gio.Icon, str], cover_type: AlbumCoverType
-    ):
+    ) -> bool:
         if cover_type == AlbumCoverType.Pixbuf:
             self.album_cover_data.song_cover_pixbuf = cover
             self.album_cover_data.cover_type = AlbumCoverType.Pixbuf
@@ -349,7 +358,7 @@ class SingleAppPlayer(Gtk.Bin):
 
         return False
 
-    def _rate_changed(self, new_rate: GLib.Variant):
+    def _rate_changed(self, new_rate: GLib.Variant) -> None:
         self.rate = new_rate.get_double()
 
     def _set_album_cover(self, art_url_variant: GLib.Variant) -> None:
@@ -398,8 +407,12 @@ class SingleAppPlayer(Gtk.Bin):
     def _set_album_cover_file(self, parsed_url: ParseResult) -> None:
         try:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(parsed_url.path)
-            self._album_cover_changed(pixbuf, AlbumCoverType.Pixbuf)
+            if pixbuf is not None:
+                self._album_cover_changed(pixbuf, AlbumCoverType.Pixbuf)
+                return
         except gi.repository.GLib.GError:
+            self._set_album_cover_other()
+        else:
             self._set_album_cover_other()
 
     def _set_album_cover_https(self, url: str) -> None:
@@ -471,9 +484,9 @@ class SingleAppPlayer(Gtk.Bin):
 
         return pixbuf
 
-    def _set_icon(self, desktop_file_name: GLib.Variant) -> None:
-        if desktop_file_name is not None:
-            desktop_file_name = desktop_file_name.get_string()
+    def _set_icon(self, desktop_file_name_var: GLib.Variant) -> None:
+        if desktop_file_name_var is not None:
+            desktop_file_name = desktop_file_name_var.get_string()
 
             try:
                 desktop_app_info = Gio.DesktopAppInfo.new(

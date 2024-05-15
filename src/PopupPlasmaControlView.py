@@ -37,8 +37,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
         name_max_len: int,
         separator_text: str,
         album_cover_size: int,
-        open_popover_func: Callable,
-        favorite_clicked: Callable,
+        open_popover_func: Callable[[], None],
+        favorite_clicked: Callable[[str], None],
     ):
         self.album_cover_size: int = album_cover_size
 
@@ -172,7 +172,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
         self.add(self.main_layout_box)
 
-    def on_play_pause_pressed(self, *_):
+    def on_play_pause_pressed(self, *_) -> None:
         self.dbus_player.call_player_method("PlayPause")
 
     def previous_clicked(self, *_) -> None:
@@ -192,10 +192,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.album_cover_changed()
 
     # overridden parent method
-    def popover_to_be_open(self):
+    def popover_to_be_open(self) -> None:
         self._create_timer()
 
-    def popover_just_closed(self):
+    def popover_just_closed(self) -> None:
         for key in self.timers_running:
             self.timers_running[key] = False
 
@@ -301,7 +301,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 Gtk.IconSize.DIALOG,
             )
 
-    def _create_timer(self):
+    def _create_timer(self) -> None:
         for key in self.timers_running:
             self.timers_running[key] = False
 
@@ -322,9 +322,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
             if timer_id not in self.timers_running:
                 break
             elif timer_id > 50:
-                # TODO: make tis log in logging framework
                 print(
-                    f"budgie-media-player: There are too many running timers, playerId: {self.service_name}, timers: {self.timers_running}"
+                    "budgie-media-player-applet: There are too many running timers, "
+                    f"playerId: {self.service_name}, timers: {self.timers_running}"
                 )
                 return
             timer_id += 1
@@ -335,7 +335,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         )
         self._set_progress_label_and_bar()
 
-    def _timer_updating_progress(self, identifier: int):
+    def _timer_updating_progress(self, identifier: int) -> bool:
         if self.playing:
             self.position += 1
             self._set_progress_label_and_bar()
@@ -348,11 +348,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
         return True
 
-    def _set_title(self, new_text: str):
+    def _set_title(self, new_text: str) -> None:
         esc_text = GLib.markup_escape_text(new_text)
         self.song_name_label.set_markup(f"<b>{esc_text}</b>")
 
-    def _set_progress_label_and_bar(self):
+    def _set_progress_label_and_bar(self) -> None:
         len_mins, len_secs = divmod(self.song_length, 60)
         pos_mins, pos_secs = divmod(self.position, 60)
         self.progress_label.set_label(

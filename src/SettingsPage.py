@@ -14,7 +14,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -338,7 +337,6 @@ class OrderPage(Gtk.Grid):
 
     def _on_move_up_clicked(self, *args):
         selected_rows = self.right_list_box.get_selected_rows()
-        box = self.right_list_box
         if len(selected_rows) == 0:
             return
 

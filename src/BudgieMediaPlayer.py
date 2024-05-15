@@ -137,7 +137,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         for player in self.players_list.values():
             player.popover_just_closed()
 
-    def favorite_player_clicked(self, service_name) -> None:
+    def favorite_player_clicked(self, service_name: str) -> None:
         if len(self.players_list) <= 1:
             return
 

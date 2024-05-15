@@ -44,14 +44,14 @@ class PanelControlView(Gtk.Box):
         can_play_or_pause: bool,
         can_go_previous: bool,
         can_go_next: bool,
-        open_popover_func: Callable,
+        open_popover_func: Callable[[], None],
         author_max_len: int,
         title_max_len: int,
         separator_text: str,
         element_order: list[str],
     ):
         Gtk.Box.__init__(self)
-        self.dbus_player = dbus_player
+        self.dbus_player: MprisWrapper = dbus_player
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.open_popover_func = open_popover_func
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
@@ -172,8 +172,9 @@ class PanelControlView(Gtk.Box):
             element = self.available_elements.get(element_name)
             if element is None:
                 print(
-                    f"'{element_name}' not in available elements - probably wrong settings -> skipping"
-                )  # TODO: make this error in log framework
+                    f"budgie-media-player-applet: '{element_name}' "
+                    "not in available elements - probably wrong settings -> skipping"
+                )
                 continue
             self.pack_start(element.widget, False, False, element.spacing)
 
