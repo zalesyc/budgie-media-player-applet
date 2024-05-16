@@ -151,6 +151,7 @@ class MainPage(Gtk.Grid):
             "the popup dimensions the popup will be automatically expanded",
             wrap=True,
         )
+        size_info_label.set_max_width_chars(1)
 
         self.attach(max_len_title, 0, 0, 2, 1)
         self.attach(self.name_max_len_label, 0, 1, 1, 1)
