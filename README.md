@@ -1,5 +1,5 @@
 # Budgie Media Player Applet
-Applet for the budgie panel for controlling all of your playing media
+Highly customizable applet for the budgie panel, for controlling all of your playing media
 
 ![screenshot](screenshot.png)
 
