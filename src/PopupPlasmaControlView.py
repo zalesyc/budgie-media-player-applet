@@ -22,9 +22,10 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
+gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
 gi.require_version("Pango", "1.0")
-from gi.repository import Gtk, GdkPixbuf, GLib
+from gi.repository import Gtk, GdkPixbuf, GLib, Gio
 from gi.repository.Pango import EllipsizeMode
 
 
@@ -32,13 +33,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def __init__(
         self,
         service_name: str,
-        orientation: Gtk.Orientation,
-        author_max_len: int,
-        name_max_len: int,
-        separator_text: str,
         album_cover_size: int,
         open_popover_func: Callable[[], None],
         favorite_clicked: Callable[[str], None],
+        settings: Gio.Settings,
     ):
         self.album_cover_size: int = album_cover_size
 
@@ -69,13 +67,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
         SingleAppPlayer.__init__(
             self,
-            service_name,
-            open_popover_func,
-            favorite_clicked,
-            orientation,
-            author_max_len,
-            name_max_len,
-            separator_text,
+            service_name=service_name,
+            open_popover_func=open_popover_func,
+            favorite_clicked=favorite_clicked,
+            settings=settings,
         )
 
         # album cover

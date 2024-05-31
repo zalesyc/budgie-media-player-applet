@@ -16,17 +16,14 @@
 
 from typing import Optional
 import gi
+from SettingsPage import SettingsPage
+from PopupPlasmaControlView import PopupPlasmaControlView
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
+gi.require_version("GLib", "2.0")
 gi.require_version("Budgie", "1.0")
 from gi.repository import Gtk, Gio, GLib, Budgie
-
-# from PanelControlView import PanelControlView
-from SettingsPage import SettingsPage
-
-# from SingleAppPlayer import SingleAppPlayer
-from PopupPlasmaControlView import PopupPlasmaControlView
 
 
 class BudgieMediaPlayer(Budgie.Applet):
@@ -100,13 +97,10 @@ class BudgieMediaPlayer(Budgie.Applet):
         for dbus_name in dbus_names:
             new_view = PopupPlasmaControlView(
                 service_name=dbus_name,
-                orientation=self.orientation,
-                author_max_len=self.author_max_len,
-                name_max_len=self.name_max_len,
-                separator_text=self.separator_text,
                 album_cover_size=self.popover_album_cover_size,
                 open_popover_func=self.show_popup,
                 favorite_clicked=self.favorite_player_clicked,
+                settings=self.settings,
             )
             if len(self.players_list) < 1:
                 new_view.add_panel_view(
@@ -189,13 +183,10 @@ class BudgieMediaPlayer(Budgie.Applet):
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
             new_view = PopupPlasmaControlView(
                 service_name=changes[0],
-                orientation=self.orientation,
-                author_max_len=self.author_max_len,
-                name_max_len=self.name_max_len,
-                separator_text=self.separator_text,
                 album_cover_size=self.popover_album_cover_size,
                 open_popover_func=self.show_popup,
                 favorite_clicked=self.favorite_player_clicked,
+                settings=self.settings,
             )
 
             self.popover_ntb.append_page(new_view, new_view.icon)

@@ -23,15 +23,15 @@ import requests
 from PIL import Image
 from PanelControlView import PanelControlView
 from AlbumCoverData import AlbumCoverType, AlbumCoverData
+from mprisWrapper import MprisWrapper
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
+gi.require_version("GLib", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, Gio, GLib, GdkPixbuf
-
-from mprisWrapper import MprisWrapper
 
 
 @dataclass
@@ -48,12 +48,12 @@ class SingleAppPlayer(Gtk.Bin):
         service_name: str,
         open_popover_func: Callable[[], None],
         favorite_clicked: Callable[[str], None],
-        orientation: Gtk.Orientation,
-        author_max_len: int,
-        name_max_len: int,
-        separator_text: str,
+        settings: Gio.Settings,
     ):
         super().__init__()
+
+        self.settings: Gio.Settings = settings
+
         self.panel_view: Optional[PanelControlView] = None
 
         self.open_popover_func: Callable = open_popover_func
@@ -61,10 +61,6 @@ class SingleAppPlayer(Gtk.Bin):
         self.service_name: str = service_name
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
         self.current_download_thread: Optional[DownloadThreadData] = None
-        self.orientation: Gtk.Orientation = orientation
-        self.author_max_len: int = author_max_len
-        self.name_max_len: int = name_max_len
-        self.separator_text: str = separator_text
 
         self.playing: bool = False
         self.artist: Optional[list[str]] = []
