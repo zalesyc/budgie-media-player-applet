@@ -42,5 +42,10 @@
             <description>Size of the album cover's bigger side in px.</description>
             <default>180</default>
         </key>
+        <key type="u" name="plasma-popover-text-style">
+            <summary>Style of the name and author text in the plasma popover</summary>
+            <description>Style of the name and author text in the plasma popover, ellipsis: 0, scrolling (marquee): 1.</description>
+            <default>1</default>
+        </key>
     </schema>
 </schemalist>
