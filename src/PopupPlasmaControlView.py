@@ -79,7 +79,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
             if self.text_style == TextStyle.scroll
             else EllipsizedLabel()
         )
-        self.song_author_label: Gtk.Label = Gtk.Label()
+        self.song_author_label: Union[ScrollingLabel, EllipsizedLabel] = (
+            ScrollingLabel()
+            if self.text_style == TextStyle.scroll
+            else EllipsizedLabel()
+        )
         self.song_separator: Gtk.Label = Gtk.Label()
         self.play_pause_button: Gtk.Button = Gtk.Button()
         self.go_previous_button: Gtk.Button = Gtk.Button()
@@ -103,8 +107,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.info_layout_hbox.pack_start(self.album_cover, False, False, 0)
 
         # song name label
-        self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
         self._set_title(self.title)
+        self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
         # song progress label
         progress_bar_layout.pack_start(self.progress_label, False, False, 4)
@@ -117,9 +121,6 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self._set_progress_label_and_bar()
 
         # song author label
-        self.song_author_label.set_max_width_chars(1)
-        self.song_author_label.set_hexpand(True)
-        self.song_author_label.set_ellipsize(EllipsizeMode.END)
         self.song_author_label.set_label(", ".join(self.artist))
         self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
 
@@ -214,12 +215,14 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.popover_open = True
         if self.text_style == TextStyle.scroll:
             self.song_name_label.to_get_visible()
+            self.song_author_label.to_get_visible()
         self._create_timer()
 
     def popover_just_closed(self) -> None:
         self.popover_open = False
         if self.text_style == TextStyle.scroll:
             self.song_name_label.to_get_invisible()
+            self.song_author_label.to_get_invisible()
         for key in self.timers_running:
             self.timers_running[key] = False
 
@@ -332,15 +335,20 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 return
             self.text_style = style
             self.song_name_label.destroy()
+            self.song_author_label.destroy()
             if self.text_style == TextStyle.scroll:
                 self.song_name_label = ScrollingLabel()
+                self.song_author_label = ScrollingLabel()
             else:
                 self.song_name_label = EllipsizedLabel()
+                self.song_author_label = EllipsizedLabel()
 
             self.song_name_label.show_all()
             self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
-            self.info_layout_vbox.reorder_child(self.song_name_label, 0)
+            self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
+            self.info_layout_vbox.show_all()
             self._set_title(self.title)
+            self.song_author_label.set_label(", ".join(self.artist))
 
     def _create_timer(self) -> None:
         for key in self.timers_running:
