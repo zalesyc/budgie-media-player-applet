@@ -27,7 +27,6 @@ gi.require_version("GLib", "2.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, GdkPixbuf, GLib, Gio
-from gi.repository.Pango import EllipsizeMode
 
 
 class TextStyle(IntEnum):
@@ -107,6 +106,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.info_layout_hbox.pack_start(self.album_cover, False, False, 0)
 
         # song name label
+        song_name_size = settings.get_int("plasma-popover-media-name-size")
+        self.song_name_label.set_text_size(
+            None if song_name_size < 0 else song_name_size
+        )
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
@@ -121,6 +124,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self._set_progress_label_and_bar()
 
         # song author label
+        author_name_size = settings.get_int("plasma-popover-media-author-size")
+        self.song_author_label.set_text_size(
+            None if author_name_size < 0 else author_name_size
+        )
         self.song_author_label.set_label(", ".join(self.artist))
         self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
 
@@ -343,12 +350,30 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.song_name_label = EllipsizedLabel()
                 self.song_author_label = EllipsizedLabel()
 
-            self.song_name_label.show_all()
             self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
             self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
             self.info_layout_vbox.show_all()
+
+            name_size = settings.get_int("plasma-popover-media-name-size")
+            author_size = settings.get_int("plasma-popover-media-author-size")
+            self.song_name_label.set_text_size(None if name_size < 0 else name_size)
+            self.song_author_label.set_text_size(
+                None if author_size < 0 else author_size
+            )
+
             self._set_title(self.title)
             self.song_author_label.set_label(", ".join(self.artist))
+            return
+
+        if changed_key == "plasma-popover-media-name-size":
+            size = settings.get_int("plasma-popover-media-name-size")
+            self.song_name_label.set_text_size(None if size < 0 else size)
+            return
+
+        if changed_key == "plasma-popover-media-author-size":
+            size = settings.get_int("plasma-popover-media-author-size")
+            self.song_author_label.set_text_size(None if size < 0 else size)
+            return
 
     def _create_timer(self) -> None:
         for key in self.timers_running:

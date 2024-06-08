@@ -47,5 +47,15 @@
             <description>Style of the name and author text in the plasma popover, ellipsis: 0, scrolling (marquee): 1.</description>
             <default>1</default>
         </key>
+        <key type="i" name="plasma-popover-media-name-size">
+            <summary>Size of the name text in the plasma popover</summary>
+            <description>Size of the playing media's name in the plasma popover, in px, -1 is the system default</description>
+            <default>-1</default>
+        </key>
+        <key type="i" name="plasma-popover-media-author-size">
+            <summary>Size of the author text in the plasma popover</summary>
+            <description>Size of the playing media's author in the plasma popover, in px, -1 is the system default</description>
+            <default>-1</default>
+        </key>
     </schema>
 </schemalist>
