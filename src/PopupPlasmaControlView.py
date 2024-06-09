@@ -110,6 +110,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.song_name_label.set_text_size(
             None if song_name_size < 0 else song_name_size
         )
+        if self.text_style == TextStyle.scroll:
+            speed = settings.get_double("plasma-popover-media-name-scrolling-speed")
+            self.song_name_label.set_speed(speed)
+
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
@@ -128,6 +132,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.song_author_label.set_text_size(
             None if author_name_size < 0 else author_name_size
         )
+        if self.text_style == TextStyle.scroll:
+            speed = settings.get_double("plasma-popover-media-author-scrolling-speed")
+            self.song_author_label.set_speed(speed)
         self.song_author_label.set_label(", ".join(self.artist))
         self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
 
@@ -373,6 +380,20 @@ class PopupPlasmaControlView(SingleAppPlayer):
         if changed_key == "plasma-popover-media-author-size":
             size = settings.get_int("plasma-popover-media-author-size")
             self.song_author_label.set_text_size(None if size < 0 else size)
+            return
+
+        if changed_key == "plasma-popover-media-name-scrolling-speed":
+            if self.text_style != TextStyle.scroll:
+                return
+            speed = settings.get_double("plasma-popover-media-name-scrolling-speed")
+            self.song_name_label.set_speed(speed)
+            return
+
+        if changed_key == "plasma-popover-media-author-scrolling-speed":
+            if self.text_style != TextStyle.scroll:
+                return
+            speed = settings.get_double("plasma-popover-media-author-scrolling-speed")
+            self.song_author_label.set_speed(speed)
             return
 
     def _create_timer(self) -> None:

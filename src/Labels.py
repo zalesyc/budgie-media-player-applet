@@ -47,10 +47,7 @@ class ScrollingLabel(Gtk.ScrolledWindow):
 
         self.scrolling_value: float = 0.0
         self._scroll_callback_id: Optional[int] = None
-        self._speed: float = self._round_to_nearest_multiple(
-            speed,
-            self.get_hadjustment().get_minimum_increment(),
-        )
+        self._speed: float = speed if speed > 0 else 1.0
         self._is_visible: bool = is_visible
 
         self._css_provider = Gtk.CssProvider()
@@ -137,10 +134,8 @@ class ScrollingLabel(Gtk.ScrolledWindow):
             )
 
     def set_speed(self, new_speed: float) -> None:
-        self._speed: float = self._round_to_nearest_multiple(
-            new_speed,
-            self.get_hadjustment().get_minimum_increment(),
-        )
+        if new_speed > 0:
+            self._speed = new_speed
 
     def to_get_visible(self) -> None:
         """
@@ -207,12 +202,6 @@ class ScrollingLabel(Gtk.ScrolledWindow):
     @staticmethod
     def _get_label_width(label: Gtk.Label) -> int:
         return label.get_layout().get_pixel_size()[0]
-
-    @staticmethod
-    def _round_to_nearest_multiple(num: float, to: float) -> float:
-        if to == 0:
-            return num
-        return round(num / to) * to
 
 
 class EllipsizedLabel(Gtk.Label):
