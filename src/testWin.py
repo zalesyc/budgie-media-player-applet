@@ -18,26 +18,34 @@
 
 import sys
 import gi.repository
+from BudgieMediaPlayer import BudgieMediaPlayer
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Budgie", "1.0")
-from gi.repository import Gtk, GLib, Gio, Budgie
-from BudgieMediaPlayer import BudgieMediaPlayer
+gi.require_version("GLib", "2.0")
+
+from gi.repository import Gtk, GLib, Budgie
 
 
 class MyWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="MediaPlayerTestWin")
-        self.mp = BudgieMediaPlayer("0")
-        if len(sys.argv) > 1 and sys.argv[1] == "-v":
-            self.mp.do_panel_position_changed(Budgie.PanelPosition.LEFT)
-        self.add(self.mp)
+        self.player = BudgieMediaPlayer("test")
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "-v":
+                self.player.do_panel_position_changed(Budgie.PanelPosition.LEFT)
+                return
+            if sys.argv[1] == "-s":
+                self.add(self.player.do_get_settings_ui())
+                return
+
+        self.add(self.player)
 
 
 def main():
     mainloop = GLib.MainLoop()
 
-    def quit_window(*args):
+    def quit_window(*_):
         mainloop.quit()
 
     win = MyWindow()

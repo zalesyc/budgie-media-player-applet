@@ -6,6 +6,7 @@ Highly customizable applet for the budgie panel, for controlling all of your pla
 ## Developing
 There is a file: `src/testWin.py` that is not used when installing the applet, but it is used for debugging, as it creates the applet in a standalone window.
 - If you pass -v it will show the vertical representation of the applet.
+- If you pass -s the settings page will show. This page is fully operational and directly modifies the settings for `testwin`.
 
 This project uses type annotations for better code readability,
 they should be:
