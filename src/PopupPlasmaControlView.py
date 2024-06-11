@@ -113,6 +113,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
         if self.text_style == TextStyle.scroll:
             speed = settings.get_double("plasma-popover-media-name-scrolling-speed")
             self.song_name_label.set_speed(speed)
+        else:
+            self.song_name_label.set_xalign(0.0)
 
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
@@ -135,6 +137,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         if self.text_style == TextStyle.scroll:
             speed = settings.get_double("plasma-popover-media-author-scrolling-speed")
             self.song_author_label.set_speed(speed)
+        else:
+            self.song_author_label.set_xalign(0.0)
+
         self.song_author_label.set_label(", ".join(self.artist))
         self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
 
@@ -356,6 +361,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
             else:
                 self.song_name_label = EllipsizedLabel()
                 self.song_author_label = EllipsizedLabel()
+                self.song_name_label.set_xalign(0.0)
+                self.song_author_label.set_xalign(0.0)
 
             self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
             self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
