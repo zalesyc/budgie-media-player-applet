@@ -17,7 +17,7 @@
 
 from SingleAppPlayer import SingleAppPlayer
 from AlbumCoverData import AlbumCoverType
-from Labels import ScrollingLabel, EllipsizedLabel
+from Labels import ScrollingLabel, ElliptedLabel
 from typing import Callable, Optional, Union
 from enum import IntEnum
 import gi
@@ -73,15 +73,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.DIALOG
         )
-        self.song_name_label: Union[ScrollingLabel, EllipsizedLabel] = (
-            ScrollingLabel()
-            if self.text_style == TextStyle.scroll
-            else EllipsizedLabel()
+        self.song_name_label: Union[ScrollingLabel, ElliptedLabel] = (
+            ScrollingLabel() if self.text_style == TextStyle.scroll else ElliptedLabel()
         )
-        self.song_author_label: Union[ScrollingLabel, EllipsizedLabel] = (
-            ScrollingLabel()
-            if self.text_style == TextStyle.scroll
-            else EllipsizedLabel()
+        self.song_author_label: Union[ScrollingLabel, ElliptedLabel] = (
+            ScrollingLabel() if self.text_style == TextStyle.scroll else ElliptedLabel()
         )
         self.song_separator: Gtk.Label = Gtk.Label()
         self.play_pause_button: Gtk.Button = Gtk.Button()
@@ -354,8 +350,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.song_name_label = ScrollingLabel()
                 self.song_author_label = ScrollingLabel()
             else:
-                self.song_name_label = EllipsizedLabel()
-                self.song_author_label = EllipsizedLabel()
+                self.song_name_label = ElliptedLabel()
+                self.song_author_label = ElliptedLabel()
 
             self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
             self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)

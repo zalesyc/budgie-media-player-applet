@@ -204,9 +204,9 @@ class ScrollingLabel(Gtk.ScrolledWindow):
         return label.get_layout().get_pixel_size()[0]
 
 
-class EllipsizedLabel(Gtk.Label):
+class ElliptedLabel(Gtk.Label):
     """
-    Elipsized label that can set its text size,
+    Ellipted label that can set its text size,
     if text_size is None, a system default will be used
     """
 
