@@ -34,7 +34,7 @@ class TextStyle(IntEnum):
     scroll = 1
 
     @classmethod
-    def insert(cls, value: int, default: int = None):
+    def insert(cls, value: int, default: Optional[int] = None):
         values = list(map(int, cls))
         if value in values:
             return cls(value)

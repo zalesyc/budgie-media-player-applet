@@ -160,9 +160,7 @@ class MainPage(Gtk.Grid):
         )
 
         self.popover_text_style_combobox = Gtk.ComboBoxText.new()
-        self.popover_text_style_combobox.append(
-            "0", "Ellipt (Cut)"
-        )
+        self.popover_text_style_combobox.append("0", "Ellipt (Cut)")
         self.popover_text_style_combobox.append("1", "Scroll")
         self.popover_text_style_combobox.set_active_id(
             str(self.settings.get_uint("plasma-popover-text-style"))

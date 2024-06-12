@@ -15,8 +15,8 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import gi
 from typing import Optional
+import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -185,14 +185,14 @@ class ScrollingLabel(Gtk.ScrolledWindow):
 
         return True
 
-    def _wait_for_self_allocate_and_resize(self):
+    def _wait_for_self_allocate_and_resize(self) -> None:
         self._resize(
             self._get_label_width(self._label1),
             self.get_allocated_width(),
         )
         self.connect("size-allocate", self._size_allocate)
 
-    def _size_allocate(self, _, rect: Gdk.Rectangle):
+    def _size_allocate(self, _, rect: Gdk.Rectangle) -> None:
         self._resize(
             self._get_label_width(self._label1),
             rect.width,
