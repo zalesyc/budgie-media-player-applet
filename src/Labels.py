@@ -168,6 +168,8 @@ class ScrollingLabel(Gtk.ScrolledWindow):
             self._label2.hide()
             self._separator1.hide()
             self._separator2.hide()
+            self.get_hadjustment().set_value(0.0)
+            self.scrolling_value = 0.0
             if self._scroll_callback_id is not None:
                 self.remove_tick_callback(self._scroll_callback_id)
                 self._scroll_callback_id = None
