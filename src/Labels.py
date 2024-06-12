@@ -215,6 +215,7 @@ class EllipsizedLabel(Gtk.Label):
 
         self.set_max_width_chars(1)
         self.set_ellipsize(EllipsizeMode.END)
+        self.set_xalign(0.0)
 
         self._css_provider = Gtk.CssProvider()
         if text_size is None:
