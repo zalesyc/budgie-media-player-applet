@@ -97,7 +97,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         for dbus_name in dbus_names:
             new_view = PopupPlasmaControlView(
                 service_name=dbus_name,
-                album_cover_size=self.popover_album_cover_size,
                 open_popover_func=self.show_popup,
                 favorite_clicked=self.favorite_player_clicked,
                 settings=self.settings,
@@ -183,7 +182,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
             new_view = PopupPlasmaControlView(
                 service_name=changes[0],
-                album_cover_size=self.popover_album_cover_size,
                 open_popover_func=self.show_popup,
                 favorite_clicked=self.favorite_player_clicked,
                 settings=self.settings,

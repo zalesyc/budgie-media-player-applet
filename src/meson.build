@@ -7,5 +7,6 @@ install_data(
     'AlbumCoverData.py',
     'mprisWrapper.py',
     'SettingsPage.py',
+    'Labels.py',
     install_dir: PLUGINS_INSTALL_DIR
 )

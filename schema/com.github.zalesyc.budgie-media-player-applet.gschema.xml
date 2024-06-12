@@ -42,5 +42,30 @@
             <description>Size of the album cover's bigger side in px.</description>
             <default>180</default>
         </key>
+        <key type="u" name="plasma-popover-text-style">
+            <summary>Style of the name and author text in the plasma popover</summary>
+            <description>Style of the name and author text in the plasma popover, ellipting: 0, scrolling (marquee): 1.</description>
+            <default>1</default>
+        </key>
+        <key type="i" name="plasma-popover-media-name-size">
+            <summary>Size of the name text in the plasma popover</summary>
+            <description>Size of the playing media's name in the plasma popover, in px, -1 is the system default.</description>
+            <default>-1</default>
+        </key>
+        <key type="i" name="plasma-popover-media-author-size">
+            <summary>Size of the author text in the plasma popover</summary>
+            <description>Size of the playing media's author in the plasma popover, in px, -1 is the system default.</description>
+            <default>-1</default>
+        </key>
+        <key type="d" name="plasma-popover-media-name-scrolling-speed">
+            <summary>Speed of the scrolling of the name text in the plasma popover</summary>
+            <description>Speed of the scrolling of the playing media's name in the plasma popover, when style is set to scroll, currently only positive numbers are used.</description>
+            <default>1.0</default>
+        </key>
+        <key type="d" name="plasma-popover-media-author-scrolling-speed">
+            <summary>Speed of the scrolling of the author text in the plasma popover</summary>
+            <description>Speed of the scrolling of the playing media's name in the plasma popover, when style is set to scroll, currently only positive numbers are used.</description>
+            <default>1.0</default>
+        </key>
     </schema>
 </schemalist>

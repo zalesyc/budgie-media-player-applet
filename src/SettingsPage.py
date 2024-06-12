@@ -153,6 +153,95 @@ class MainPage(Gtk.Grid):
         )
         size_info_label.set_max_width_chars(1)
 
+        popover_text_style_label = Gtk.Label(
+            label="Popup text style:",
+            tooltip_text="Style of the name and author text in the popup",
+            halign=Gtk.Align.START,
+        )
+
+        self.popover_text_style_combobox = Gtk.ComboBoxText.new()
+        self.popover_text_style_combobox.append("0", "Ellipt (Cut)")
+        self.popover_text_style_combobox.append("1", "Scroll")
+        self.popover_text_style_combobox.set_active_id(
+            str(self.settings.get_uint("plasma-popover-text-style"))
+        )
+        self.popover_text_style_combobox.connect(
+            "changed", self.popover_text_style_combobox_changed
+        )
+
+        popover_text_size_label = Gtk.Label(halign=Gtk.Align.START)
+        popover_text_size_label.set_markup("<b>Size of the text in popup:</b>")
+
+        popover_text_size_name_label, popover_text_size_name_spinbox = (
+            self._combobox_label_init(
+                "   - Name:",
+                "Size of the name text in the popup, -1 is default",
+                "plasma-popover-media-name-size",
+                -1,
+                200,
+            )
+        )
+        popover_text_size_author_label, popover_text_size_author_spinbox = (
+            self._combobox_label_init(
+                "   - Author:",
+                "Size of the author text in the popup, -1 is default",
+                "plasma-popover-media-author-size",
+                -1,
+                200,
+            )
+        )
+
+        popover_scrolling_speed_label = Gtk.Label(halign=Gtk.Align.START)
+        popover_scrolling_speed_label.set_markup(
+            "<b>Text scrolling speed in popup:</b>"
+        )
+
+        popover_scrolling_speed_name_label = Gtk.Label(
+            label="   - Name:",
+            tooltip_text="Speed of the scrolling of the name text in the popup, "
+            "if text style set to scrolling",
+            halign=Gtk.Align.START,
+        )
+
+        popover_scrolling_speed_name_spinbox = Gtk.SpinButton.new_with_range(1, 200, 1)
+        popover_scrolling_speed_name_spinbox.set_value(
+            round(
+                self.settings.get_double("plasma-popover-media-name-scrolling-speed")
+                * 4
+            )
+        )
+        popover_scrolling_speed_name_spinbox.connect(
+            "value-changed",
+            lambda *_: self.settings.set_double(
+                "plasma-popover-media-name-scrolling-speed",
+                popover_scrolling_speed_name_spinbox.get_value_as_int() / 4,
+            ),
+        )
+
+        popover_scrolling_speed_author_label = Gtk.Label(
+            label="   - Author:",
+            tooltip_text="Speed of the scrolling of the author text in the popup, "
+            "if text style set to scrolling",
+            halign=Gtk.Align.START,
+        )
+
+        popover_scrolling_speed_author_spinbox = Gtk.SpinButton.new_with_range(
+            1, 200, 1
+        )
+        popover_scrolling_speed_author_spinbox.set_value(
+            round(
+                self.settings.get_double("plasma-popover-media-author-scrolling-speed")
+                * 4
+            )
+        )
+        popover_scrolling_speed_author_spinbox.connect(
+            "value-changed",
+            lambda *_: self.settings.set_double(
+                "plasma-popover-media-author-scrolling-speed",
+                popover_scrolling_speed_author_spinbox.get_value_as_int() / 4,
+            ),
+        )
+
         self.attach(max_len_title, 0, 0, 2, 1)
         self.attach(self.name_max_len_label, 0, 1, 1, 1)
         self.attach(self.name_max_len_spin_button, 1, 1, 1, 1)
@@ -171,6 +260,19 @@ class MainPage(Gtk.Grid):
         self.attach(popover_album_cover_size_label, 0, 9, 1, 1)
         self.attach(self.popover_album_cover_size_combobox, 1, 9, 1, 1)
         self.attach(size_info_label, 0, 10, 2, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 11, 2, 1)
+        self.attach(popover_text_style_label, 0, 12, 1, 1)
+        self.attach(self.popover_text_style_combobox, 1, 12, 1, 1)
+        self.attach(popover_text_size_label, 0, 13, 2, 1)
+        self.attach(popover_text_size_name_label, 0, 14, 1, 1)
+        self.attach(popover_text_size_name_spinbox, 1, 14, 1, 1)
+        self.attach(popover_text_size_author_label, 0, 15, 1, 1)
+        self.attach(popover_text_size_author_spinbox, 1, 15, 1, 1)
+        self.attach(popover_scrolling_speed_label, 0, 16, 2, 1)
+        self.attach(popover_scrolling_speed_name_label, 0, 17, 1, 1)
+        self.attach(popover_scrolling_speed_name_spinbox, 1, 17, 1, 1)
+        self.attach(popover_scrolling_speed_author_label, 0, 18, 1, 1)
+        self.attach(popover_scrolling_speed_author_spinbox, 1, 18, 1, 1)
 
         self.show_all()
 
@@ -190,7 +292,17 @@ class MainPage(Gtk.Grid):
         self.settings.set_boolean("show-arrow", state)
         return False
 
-    def settings_changed(self, settings, key):
+    def popover_text_style_combobox_changed(self, *_) -> None:
+        new_val = self.popover_text_style_combobox.get_active_id()
+        if not new_val.isdigit():
+            return
+        num_val = int(new_val)
+        if num_val < 0:
+            return
+        self.settings.set_uint("plasma-popover-text-style", num_val)
+
+    def settings_changed(self, _, key):
+        # note: this isn't really needed you will not change settings from two places at once
         if key == "author-name-max-length":
             self.author_max_len_spin_button.set_value(self.settings.get_int(key))
             return

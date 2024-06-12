@@ -17,30 +17,52 @@
 
 from SingleAppPlayer import SingleAppPlayer
 from AlbumCoverData import AlbumCoverType
-from typing import Callable, Optional
+from Labels import ScrollingLabel, ElliptedLabel
+from typing import Callable, Optional, Union
+from enum import IntEnum
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
-gi.require_version("Pango", "1.0")
 from gi.repository import Gtk, GdkPixbuf, GLib, Gio
-from gi.repository.Pango import EllipsizeMode
+
+
+class TextStyle(IntEnum):
+    ellipsis = 0
+    scroll = 1
+
+    @classmethod
+    def insert(cls, value: int, default: Optional[int] = None):
+        values = list(map(int, cls))
+        if value in values:
+            return cls(value)
+
+        if default in values:
+            return cls(default)
+
+        return cls(values[0])
 
 
 class PopupPlasmaControlView(SingleAppPlayer):
     def __init__(
         self,
         service_name: str,
-        album_cover_size: int,
         open_popover_func: Callable[[], None],
         favorite_clicked: Callable[[str], None],
         settings: Gio.Settings,
     ):
-        self.album_cover_size: int = album_cover_size
+        self.album_cover_size: int = settings.get_uint("popover-album-cover-size")
+        self.text_style: TextStyle = TextStyle.insert(
+            settings.get_uint("plasma-popover-text-style"),
+            default=TextStyle.ellipsis,
+        )
+        settings.connect("changed", self.settings_changed)
 
         self.timers_running: dict[int, bool] = {}
+        self.popover_open: bool = False
+        self.scrolling_text_value: float = 0.0
         self.main_layout_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.info_layout_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.info_layout_hbox.set_homogeneous(True)
@@ -51,9 +73,12 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.DIALOG
         )
-        self.song_name_label: Gtk.Label = Gtk.Label()
-        self.song_author_label: Gtk.Label = Gtk.Label()
-        self.song_author_label: Gtk.Label = Gtk.Label()
+        self.song_name_label: Union[ScrollingLabel, ElliptedLabel] = (
+            ScrollingLabel() if self.text_style == TextStyle.scroll else ElliptedLabel()
+        )
+        self.song_author_label: Union[ScrollingLabel, ElliptedLabel] = (
+            ScrollingLabel() if self.text_style == TextStyle.scroll else ElliptedLabel()
+        )
         self.song_separator: Gtk.Label = Gtk.Label()
         self.play_pause_button: Gtk.Button = Gtk.Button()
         self.go_previous_button: Gtk.Button = Gtk.Button()
@@ -77,9 +102,14 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.info_layout_hbox.pack_start(self.album_cover, False, False, 0)
 
         # song name label
-        self.song_name_label.set_max_width_chars(1)
-        self.song_name_label.set_hexpand(True)
-        self.song_name_label.set_ellipsize(EllipsizeMode.END)
+        song_name_size = settings.get_int("plasma-popover-media-name-size")
+        self.song_name_label.set_text_size(
+            None if song_name_size < 0 else song_name_size
+        )
+        if self.text_style == TextStyle.scroll:
+            speed = settings.get_double("plasma-popover-media-name-scrolling-speed")
+            self.song_name_label.set_speed(speed)
+
         self._set_title(self.title)
         self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
 
@@ -94,9 +124,13 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self._set_progress_label_and_bar()
 
         # song author label
-        self.song_author_label.set_max_width_chars(1)
-        self.song_author_label.set_hexpand(True)
-        self.song_author_label.set_ellipsize(EllipsizeMode.END)
+        author_name_size = settings.get_int("plasma-popover-media-author-size")
+        self.song_author_label.set_text_size(
+            None if author_name_size < 0 else author_name_size
+        )
+        if self.text_style == TextStyle.scroll:
+            speed = settings.get_double("plasma-popover-media-author-scrolling-speed")
+            self.song_author_label.set_speed(speed)
         self.song_author_label.set_label(", ".join(self.artist))
         self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
 
@@ -188,9 +222,17 @@ class PopupPlasmaControlView(SingleAppPlayer):
 
     # overridden parent method
     def popover_to_be_open(self) -> None:
+        self.popover_open = True
+        if self.text_style == TextStyle.scroll:
+            self.song_name_label.to_get_visible()
+            self.song_author_label.to_get_visible()
         self._create_timer()
 
     def popover_just_closed(self) -> None:
+        self.popover_open = False
+        if self.text_style == TextStyle.scroll:
+            self.song_name_label.to_get_invisible()
+            self.song_author_label.to_get_invisible()
         for key in self.timers_running:
             self.timers_running[key] = False
 
@@ -295,6 +337,60 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.album_cover_data.song_cover_other,
                 Gtk.IconSize.DIALOG,
             )
+
+    def settings_changed(self, settings: Gio.Settings, changed_key: str) -> None:
+        if changed_key == "plasma-popover-text-style":
+            style = TextStyle.insert(settings.get_uint("plasma-popover-text-style"))
+            if style == self.text_style:
+                return
+            self.text_style = style
+            self.song_name_label.destroy()
+            self.song_author_label.destroy()
+            if self.text_style == TextStyle.scroll:
+                self.song_name_label = ScrollingLabel()
+                self.song_author_label = ScrollingLabel()
+            else:
+                self.song_name_label = ElliptedLabel()
+                self.song_author_label = ElliptedLabel()
+
+            self.info_layout_vbox.pack_start(self.song_name_label, False, False, 0)
+            self.info_layout_vbox.pack_start(self.song_author_label, False, False, 0)
+            self.info_layout_vbox.show_all()
+
+            name_size = settings.get_int("plasma-popover-media-name-size")
+            author_size = settings.get_int("plasma-popover-media-author-size")
+            self.song_name_label.set_text_size(None if name_size < 0 else name_size)
+            self.song_author_label.set_text_size(
+                None if author_size < 0 else author_size
+            )
+
+            self._set_title(self.title)
+            self.song_author_label.set_label(", ".join(self.artist))
+            return
+
+        if changed_key == "plasma-popover-media-name-size":
+            size = settings.get_int("plasma-popover-media-name-size")
+            self.song_name_label.set_text_size(None if size < 0 else size)
+            return
+
+        if changed_key == "plasma-popover-media-author-size":
+            size = settings.get_int("plasma-popover-media-author-size")
+            self.song_author_label.set_text_size(None if size < 0 else size)
+            return
+
+        if changed_key == "plasma-popover-media-name-scrolling-speed":
+            if self.text_style != TextStyle.scroll:
+                return
+            speed = settings.get_double("plasma-popover-media-name-scrolling-speed")
+            self.song_name_label.set_speed(speed)
+            return
+
+        if changed_key == "plasma-popover-media-author-scrolling-speed":
+            if self.text_style != TextStyle.scroll:
+                return
+            speed = settings.get_double("plasma-popover-media-author-scrolling-speed")
+            self.song_author_label.set_speed(speed)
+            return
 
     def _create_timer(self) -> None:
         for key in self.timers_running:
