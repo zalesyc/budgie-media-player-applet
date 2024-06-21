@@ -141,7 +141,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         # star button
         self.star_button.set_image(
             Gtk.Image.new_from_icon_name(
-                "non-starred-symbolic",
+                "budgie-media-player-applet-unpinned-symbolic",
                 Gtk.IconSize.MENU,
             )
         )
@@ -198,9 +198,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.star_button.set_image(
             Gtk.Image.new_from_icon_name(
                 (
-                    "non-starred-symbolic"
+                    "budgie-media-player-applet-unpinned-symbolic"
                     if self.panel_view is None
-                    else "starred-symbolic"
+                    else "budgie-media-player-applet-pinned-symbolic"
                 ),
                 Gtk.IconSize.MENU,
             )

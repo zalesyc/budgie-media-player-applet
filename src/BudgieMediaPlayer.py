@@ -54,7 +54,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.add(self.box)
 
         self.popup_icon: Gtk.Image = Gtk.Image.new_from_icon_name(
-            "arrow-down", Gtk.IconSize.MENU
+            "budgie-media-player-applet-arrow-drop-down-symbolic", Gtk.IconSize.MENU
         )
         self.popup_icon_event_box: Gtk.EventBox = Gtk.EventBox()
         self.popup_icon_event_box.add(self.popup_icon)
