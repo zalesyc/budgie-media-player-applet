@@ -92,12 +92,12 @@ git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie
 #### 3. Build the applet
 Ubuntu, Arch Linux
 ~~~ shell
-meson setup build --libdir=/usr/lib
+meson setup build --libdir=/usr/lib --prefix=/usr
 ~~~
 
 Fedora, openSUSE
 ~~~ shell
-meson setup build --libdir=/usr/lib64
+meson setup build --libdir=/usr/lib64 --prefix=/usr
 ~~~
 
 #### 4. Install the applet
