@@ -117,6 +117,7 @@ class PanelControlView(Gtk.Box):
         self.play_pause_button.set_relief(Gtk.ReliefStyle.NONE)
         self.play_pause_button.set_sensitive(can_play_or_pause)
         self.play_pause_button.connect("button-press-event", self.play_paused_clicked)
+        self.play_pause_button.set_tooltip_text("Play / Pause")
         self.available_elements.update(
             {"play_pause_button": Element(self.play_pause_button, 0)}
         )
@@ -130,6 +131,7 @@ class PanelControlView(Gtk.Box):
         self.go_previous_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_previous_button.set_sensitive(can_go_previous)
         self.go_previous_button.connect("button-press-event", self.backward_clicked)
+        self.go_previous_button.set_tooltip_text("Go to the previous song / media")
         self.available_elements.update(
             {"backward_button": Element(self.go_previous_button, 0)}
         )
@@ -143,6 +145,7 @@ class PanelControlView(Gtk.Box):
         self.go_next_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_next_button.set_sensitive(can_go_next)
         self.go_next_button.connect("button-press-event", self.forward_clicked)
+        self.go_next_button.set_tooltip_text("Go to the next song / media")
         self.available_elements.update(
             {"forward_button": Element(self.go_next_button, 0)}
         )
