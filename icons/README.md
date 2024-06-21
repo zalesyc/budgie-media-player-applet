@@ -15,6 +15,7 @@ others are unique to this applet as there are not any suitable standard icons.
 - go-down-symbolic.svg
 - go-next-symbolic.svg
 - go-previous-symbolic.svg
+- budgie-media-player-applet-arrow-drop-down-symbolic.svg
 
 ### Icons from [Google's material icons](https://github.com/google/material-design-icons):
 - budgie-media-player-applet-arrow-drop-down-symbolic.svg

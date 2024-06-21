@@ -14,18 +14,23 @@
   - go-down-symbolic.svg
   - go-next-symbolic.svg
   - go-previous-symbolic.svg
+  - budgie-media-player-applet-arrow-drop-down-symbolic.svg
+  
+All icons from Papirus remain unmodified and retain their original names, 
+except for  `budgie-media-player-applet-arrow-drop-down-symbolic.svg`, 
+which has been renamed from `pan-up-symbolic.svg`.
+
 
 ## Icons from google material icons:
 - Url: https://github.com/google/material-design-icons
 - License: Apache License, Version 2.0
 - Copyright: © Google LLC 
 - Icons from material icons:
-  - budgie-media-player-applet-arrow-drop-down-symbolic.svg
   - budgie-media-player-applet-pinned-symbolic.svg
   - budgie-media-player-applet-unpinned-symbolic.svg
 
-
-
+The unpinned icon has not been modified and the pinned icon has been rotated,
+but still remained the same.
 
 
 ## Copy of Apache License, Version 2.0:
