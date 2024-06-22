@@ -1,11 +1,10 @@
-## Icons for budgie-media-player-applet
+## Icons for the budgie-media-player-applet
 
-In this folder are all the icons the applet uses, I didn’t draw any of these icons.
+This folder contains all the icons used by the applet. It’s important to note that I didn't create any of these icons myself.
 
-Some icons are used as a fallback, when your icon theme doesn't support them, 
-others are unique to this applet as there are not any suitable standard icons.
+- **Fallback Icons:** Some of these icons serve as fallbacks. They come into play when your icon theme doesn't support specific icons.
+- **Unique Icons:** Others are unique to this applet because there aren’t suitable standard icons available.
 
-**Icons are from [papirus icon theme](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme)**
+**These icons are sourced from the [Papirus icon theme](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme).**
 
-
-**License and copyright information is in: [notices.md](./notices.md)**
+**For license and copyright information, refer to [notices.md](./../LICENSE).**
