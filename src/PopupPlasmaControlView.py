@@ -143,6 +143,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.go_previous_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_previous_button.set_sensitive(self.can_go_previous)
         self.go_previous_button.connect("pressed", self.previous_clicked)
+        self.go_previous_button.set_tooltip_text("Go to the previous song / media")
         self.controls_layout_box.pack_start(self.go_previous_button, False, False, 0)
 
         # play pause btn
@@ -159,6 +160,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.play_pause_button.set_relief(Gtk.ReliefStyle.NONE)
         self.play_pause_button.set_sensitive(self.can_pause or self.can_play)
         self.play_pause_button.connect("pressed", self.on_play_pause_pressed)
+        self.play_pause_button.set_tooltip_text("Play / Pause")
         self.controls_layout_box.pack_start(self.play_pause_button, False, False, 0)
 
         # go next btn
@@ -170,17 +172,21 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.go_next_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_next_button.set_sensitive(self.can_go_next)
         self.go_next_button.connect("pressed", self.next_clicked)
+        self.go_next_button.set_tooltip_text("Go to the next song / media")
         self.controls_layout_box.pack_start(self.go_next_button, False, False, 0)
 
         # star button
         self.star_button.set_image(
             Gtk.Image.new_from_icon_name(
-                "non-starred-symbolic",
+                "budgie-media-player-applet-unpinned-symbolic",
                 Gtk.IconSize.MENU,
             )
         )
         self.star_button.set_relief(Gtk.ReliefStyle.NONE)
         self.star_button.connect("pressed", self.starred_clicked)
+        self.star_button.set_tooltip_markup(
+            "<b>Pin / unpin the player</b>, the pinned player is shown in the panel"
+        )
         self.controls_layout_box.pack_start(self.star_button, False, False, 0)
 
         self.set_hexpand(True)
@@ -240,9 +246,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.star_button.set_image(
             Gtk.Image.new_from_icon_name(
                 (
-                    "non-starred-symbolic"
+                    "budgie-media-player-applet-unpinned-symbolic"
                     if self.panel_view is None
-                    else "starred-symbolic"
+                    else "budgie-media-player-applet-pinned-symbolic"
                 ),
                 Gtk.IconSize.MENU,
             )

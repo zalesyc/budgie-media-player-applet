@@ -380,16 +380,16 @@ class OrderPage(Gtk.Grid):
         right_frame.add(self.right_list_box)
 
         self.add_button: Gtk.Button = Gtk.Button.new_from_icon_name(
-            "arrow-right", Gtk.IconSize.BUTTON
+            "go-next-symbolic", Gtk.IconSize.BUTTON
         )
         self.remove_button: Gtk.Button = Gtk.Button.new_from_icon_name(
-            "arrow-left", Gtk.IconSize.BUTTON
+            "go-previous-symbolic", Gtk.IconSize.BUTTON
         )
         self.move_up_button: Gtk.Button = Gtk.Button.new_from_icon_name(
-            "arrow-up", Gtk.IconSize.BUTTON
+            "go-up-symbolic", Gtk.IconSize.BUTTON
         )
         self.move_down_button: Gtk.Button = Gtk.Button.new_from_icon_name(
-            "arrow-down", Gtk.IconSize.BUTTON
+            "go-down-symbolic", Gtk.IconSize.BUTTON
         )
 
         self.add_button.connect("clicked", self._on_add_clicked)
