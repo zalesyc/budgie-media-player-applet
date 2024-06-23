@@ -2,8 +2,8 @@
 Loader=python3
 Module=applet
 Name=Media Player Applet
-Description=Media controler applet for budgie panel
+Description=Media controller applet for the budgie panel
 Authors=zalesyc
-Copyright=
-Website=
+Copyright=© 2023-2024 zalesyc
+Website=https://github.com/zalesyc/budgie-media-player-applet
 Icon=media-playback-start-symbolic
