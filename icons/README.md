@@ -7,4 +7,4 @@ This folder contains all the icons used by the applet. It’s important to note 
 
 **These icons are sourced from the [Papirus icon theme](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme).**
 
-**For license and copyright information, refer to [notices.md](./../LICENSE).**
+**For license and copyright information, refer to [notices.md](notices.md).**

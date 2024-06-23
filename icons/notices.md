@@ -4,6 +4,8 @@
 - License: GNU General Public License v3.0
 - Copyright: © PapirusDevelopmentTeam
 
+You can find a copy of the license in [LICENSE](./../LICENSE).
+
 ### Modifications
 `budgie-media-player-applet-arrow-drop-down-symbolic.svg`, 
 has been renamed from `pan-up-symbolic.svg`.
