@@ -50,7 +50,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self,
         service_name: str,
         open_popover_func: Callable[[], None],
-        favorite_clicked: Callable[[str], None],
+        on_pin_clicked: Callable[[str], None],
         settings: Gio.Settings,
     ):
         self.album_cover_size: int = settings.get_uint("popover-album-cover-size")
@@ -83,7 +83,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.play_pause_button: Gtk.Button = Gtk.Button()
         self.go_previous_button: Gtk.Button = Gtk.Button()
         self.go_next_button: Gtk.Button = Gtk.Button()
-        self.star_button: Gtk.Button = Gtk.Button()
+        self.pin_button: Gtk.Button = Gtk.Button()
         self.progress_label: Gtk.Label = Gtk.Label()
         self.progress_bar: Gtk.ProgressBar = Gtk.ProgressBar()
 
@@ -94,7 +94,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
             self,
             service_name=service_name,
             open_popover_func=open_popover_func,
-            favorite_clicked=favorite_clicked,
+            on_pin_clicked=on_pin_clicked,
             settings=settings,
         )
 
@@ -175,19 +175,19 @@ class PopupPlasmaControlView(SingleAppPlayer):
         self.go_next_button.set_tooltip_text("Go to the next song / media")
         self.controls_layout_box.pack_start(self.go_next_button, False, False, 0)
 
-        # star button
-        self.star_button.set_image(
+        # pin button
+        self.pin_button.set_image(
             Gtk.Image.new_from_icon_name(
                 "budgie-media-player-applet-unpinned-symbolic",
                 Gtk.IconSize.MENU,
             )
         )
-        self.star_button.set_relief(Gtk.ReliefStyle.NONE)
-        self.star_button.connect("pressed", self.starred_clicked)
-        self.star_button.set_tooltip_markup(
+        self.pin_button.set_relief(Gtk.ReliefStyle.NONE)
+        self.pin_button.connect("pressed", self.pin_clicked)
+        self.pin_button.set_tooltip_markup(
             "<b>Pin / unpin the player</b>, the pinned player is shown in the panel"
         )
-        self.controls_layout_box.pack_start(self.star_button, False, False, 0)
+        self.controls_layout_box.pack_start(self.pin_button, False, False, 0)
 
         self.set_hexpand(True)
 
@@ -219,8 +219,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def song_info_clicked(self, *_) -> None:
         self.dbus_player.call_app_method("Raise")
 
-    def starred_clicked(self, *_) -> None:
-        self.favorite_clicked(self.service_name)
+    def pin_clicked(self, *_) -> None:
+        self.on_pin_clicked(self.service_name)
 
     def set_popover_album_cover_size(self, new_size: int) -> None:
         self.album_cover_size = new_size
@@ -242,8 +242,8 @@ class PopupPlasmaControlView(SingleAppPlayer):
         for key in self.timers_running:
             self.timers_running[key] = False
 
-    def starred_changed(self) -> None:
-        self.star_button.set_image(
+    def pinned_changed(self) -> None:
+        self.pin_button.set_image(
             Gtk.Image.new_from_icon_name(
                 (
                     "budgie-media-player-applet-unpinned-symbolic"

@@ -99,7 +99,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             new_view = PopupPlasmaControlView(
                 service_name=dbus_name,
                 open_popover_func=self.show_popup,
-                favorite_clicked=self.favorite_player_clicked,
+                on_pin_clicked=self.favorite_player_clicked,
                 settings=self.settings,
             )
             if len(self.players_list) < 1:
@@ -184,7 +184,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             new_view = PopupPlasmaControlView(
                 service_name=changes[0],
                 open_popover_func=self.show_popup,
-                favorite_clicked=self.favorite_player_clicked,
+                on_pin_clicked=self.favorite_player_clicked,
                 settings=self.settings,
             )
 

@@ -47,7 +47,7 @@ class SingleAppPlayer(Gtk.Bin):
         self,
         service_name: str,
         open_popover_func: Callable[[], None],
-        favorite_clicked: Callable[[str], None],
+        on_pin_clicked: Callable[[str], None],
         settings: Gio.Settings,
     ):
         super().__init__()
@@ -57,7 +57,7 @@ class SingleAppPlayer(Gtk.Bin):
         self.panel_view: Optional[PanelControlView] = None
 
         self.open_popover_func: Callable = open_popover_func
-        self.favorite_clicked: Callable = favorite_clicked
+        self.on_pin_clicked: Callable = on_pin_clicked
         self.service_name: str = service_name
         self.dbus_player: MprisWrapper = MprisWrapper(self.service_name)
         self.current_download_thread: Optional[DownloadThreadData] = None
@@ -177,7 +177,7 @@ class SingleAppPlayer(Gtk.Bin):
             element_order=element_order,
         )
 
-        self.starred_changed()
+        self.pinned_changed()
 
     def remove_panel_view(self) -> None:
         if self.panel_view is None:
@@ -188,7 +188,7 @@ class SingleAppPlayer(Gtk.Bin):
             return
         self.panel_view.destroy()
         self.panel_view = None
-        self.starred_changed()
+        self.pinned_changed()
 
     def panel_size_changed(self, new_size: int) -> None:
         if self.panel_view is not None:
@@ -246,7 +246,7 @@ class SingleAppPlayer(Gtk.Bin):
     def album_cover_changed(self) -> None:
         pass
 
-    def starred_changed(self) -> None:
+    def pinned_changed(self) -> None:
         pass
 
     def _playing_changed(self, status: GLib.Variant) -> None:
