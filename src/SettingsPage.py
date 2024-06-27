@@ -20,9 +20,9 @@ class SettingsPage(Gtk.Box):
 
         self.stack.add_titled(MainPage(settings), "main_page", "General")
         self.stack.add_titled(
-            OrderPage(
+            OrderWidget(
                 settings=settings,
-                availible_elements={
+                available_elements={
                     "album_cover",
                     "song_name",
                     "song_separator",
@@ -67,9 +67,6 @@ class MainPage(Gtk.Grid):
                 "media-title-max-length",
             )
         )
-        # self.name_max_len_spin_button.connect(
-        #     "value_changed", self.name_max_len_spin_box_changed
-        # )
 
         self.author_max_len_label, self.author_max_len_spin_button = (
             self._combobox_label_init(
@@ -78,10 +75,6 @@ class MainPage(Gtk.Grid):
                 "author-name-max-length",
             )
         )
-
-        # self.author_max_len_spin_button.connect(
-        #     "value_changed", self.author_max_len_spin_box_changed
-        # )
 
         separator_text_label = Gtk.Label.new("Separator:")
         separator_text_label.set_hexpand(True)
@@ -288,24 +281,6 @@ class MainPage(Gtk.Grid):
             return
         self.settings.set_uint("plasma-popover-text-style", num_val)
 
-    def settings_changed(self, _, key):
-        # note: this isn't really needed you will not change settings from two places at once
-        if key == "author-name-max-length":
-            self.author_max_len_spin_button.set_value(self.settings.get_int(key))
-            return
-
-        if key == "media-title-max-length":
-            self.name_max_len_spin_button.set_value(self.settings.get_int(key))
-            return
-
-        if key == "separator-text":
-            self.separator_combobox.set_active_id(self.settings.get_string(key))
-            return
-
-        if key == "show-arrow":
-            self.show_arrow_switch.set_state(self.settings.get_boolean(key))
-            return
-
     def _combobox_label_init(
         self,
         label_text,
@@ -339,14 +314,14 @@ class MainPage(Gtk.Grid):
         return label, spin_button
 
 
-class OrderPage(Gtk.Grid):
-    def __init__(self, settings: Gio.Settings, availible_elements: set[str]):
+class OrderWidget(Gtk.Grid):
+    def __init__(self, settings: Gio.Settings, available_elements: set[str]):
         Gtk.Grid.__init__(self)
         self.set_column_spacing(6)
         self.set_row_spacing(6)
 
         self.settings: Gio.Settings = settings
-        self.available_elements: set[str] = availible_elements
+        self.available_elements: set[str] = available_elements
 
         left_description = Gtk.Label.new("Available elements")
         right_description = Gtk.Label.new("Enabled elements")
@@ -404,8 +379,8 @@ class OrderPage(Gtk.Grid):
         for element_name in self.enabled_elements_order:
             if element_name not in self.available_elements:
                 print(
-                    f"'{element_name}' not in available elements - probably wrong settings -> skipping"
-                )  # TODO: make this error in log framework
+                    f"budgie-media-player-applet: '{element_name}' not in available elements - probably wrong settings -> skipping"
+                )
                 continue
             self.right_list_box.insert(self._make_row(element_name), -1)
 
