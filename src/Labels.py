@@ -7,10 +7,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("Pango", "1.0")
-
+gi.require_version("GLib", "2.0")
 
 from gi.repository import Gtk, Gdk
 from gi.repository.Pango import EllipsizeMode
+from gi.repository.GLib import markup_escape_text
 
 
 class ScrollingLabel(Gtk.ScrolledWindow):
@@ -233,3 +234,24 @@ class ElliptedLabel(Gtk.Label):
                 }}
                 """.encode()
             )
+
+
+class LabelWSubtitle(Gtk.Box):
+    """
+    A label with a title and a subtitle.
+    """
+
+    def __init__(self, title: str, subtitle: str, **kwargs):
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        title_label = Gtk.Label(
+            label=title,
+            use_markup=False,
+            halign=Gtk.Align.START,
+        )
+        subtitle_label = Gtk.Label(
+            label=f'<span size="smaller" weight="light">{markup_escape_text(subtitle)}</span>',
+            use_markup=True,
+            halign=Gtk.Align.START,
+        )
+        self.pack_start(title_label, False, True, 0)
+        self.pack_start(subtitle_label, False, True, 0)

@@ -5,12 +5,13 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, Pango
+
+from Labels import LabelWSubtitle
 
 
 class SettingsPage(Gtk.Box):
     def __init__(self, settings: Gio.Settings):
-        self.settings: Gio.Settings = settings
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=15)
 
         self.stack: Gtk.Stack = Gtk.Stack()
@@ -18,23 +19,8 @@ class SettingsPage(Gtk.Box):
         self.stack.set_halign(Gtk.Align.CENTER)
         self.stack.set_transition_duration(100)
 
-        self.stack.add_titled(MainPage(settings), "main_page", "General")
-        self.stack.add_titled(
-            OrderWidget(
-                settings=settings,
-                available_elements={
-                    "album_cover",
-                    "song_name",
-                    "song_separator",
-                    "song_author",
-                    "backward_button",
-                    "play_pause_button",
-                    "forward_button",
-                },
-            ),
-            "order_page",
-            "Element Order",
-        )
+        self.stack.add_titled(PanelSettingsPage(settings), "panel", "Panel")
+        self.stack.add_titled(PopoverSettingsPage(), "popover", "Popup")
 
         stack_switcher = Gtk.StackSwitcher()
         stack_switcher.set_halign(Gtk.Align.CENTER)
@@ -46,6 +32,101 @@ class SettingsPage(Gtk.Box):
         self.show_all()
 
 
+class PanelSettingsPage(Gtk.Grid):
+    def __init__(self, settings: Gio.Settings):
+        Gtk.Grid.__init__(self)
+        self.set_column_homogeneous(False)
+        self.set_column_spacing(12)
+        self.set_row_spacing(12)
+
+        order_label = LabelWSubtitle(
+            title="Element order:",
+            subtitle="The order of the individual elements in the panel",
+            halign=Gtk.Align.START,
+        )
+        order_widget = OrderWidget(
+            settings,
+            available_elements={
+                "album_cover",
+                "song_name",
+                "song_separator",
+                "song_author",
+                "backward_button",
+                "play_pause_button",
+                "forward_button",
+            },
+            hexpand=True,
+        )
+
+        max_len_title = Gtk.Label(
+            use_markup=True,
+            label="Maximum length of:",
+            tooltip_text="Maximum length, in characters",
+            halign=Gtk.Align.START,
+        )
+
+        max_len_author_label = LabelWSubtitle(
+            title="Author:",
+            subtitle="if set to 0 size will be unlimited",
+            halign=Gtk.Align.START,
+            margin_left=50,
+        )
+
+        max_len_author_value_spin = Gtk.SpinButton(
+            hexpand=True,
+            halign=Gtk.Align.START,
+        )
+
+        max_len_name_label = LabelWSubtitle(
+            title="Name:",
+            subtitle="if set to 0 size will be unlimited",
+            halign=Gtk.Align.START,
+            margin_left=50,
+        )
+
+        max_len_name_value_spin = Gtk.SpinButton(
+            hexpand=True,
+            halign=Gtk.Align.START,
+        )
+
+        separator_label = LabelWSubtitle(
+            title="Separator:",
+            subtitle="What symbol to use as the separator",
+        )
+        separator_combo = Gtk.ComboBoxText(hexpand=True)
+
+        show_arrow_label = LabelWSubtitle(
+            title="Show arrow:",
+            subtitle="The arrow opens the popup",
+        )
+        show_arrow_switch = Gtk.Switch(
+            hexpand=False,
+            halign=Gtk.Align.START,
+        )
+
+        self.attach(order_label, 0, 0, 2, 1)
+        self.attach(order_widget, 0, 1, 2, 1)
+
+        self.attach(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
+
+        self.attach(max_len_title, 0, 3, 2, 1)
+        self.attach(max_len_author_label, 0, 4, 1, 1)
+        self.attach(max_len_author_value_spin, 1, 4, 1, 1)
+        self.attach(max_len_name_label, 0, 5, 1, 1)
+        self.attach(max_len_name_value_spin, 1, 5, 1, 1)
+
+        self.attach(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
+
+        self.attach(separator_label, 0, 7, 1, 1)
+        self.attach(separator_combo, 1, 7, 1, 1)
+        self.attach(show_arrow_label, 0, 8, 1, 1)
+        self.attach(show_arrow_switch, 1, 8, 1, 1)
+
+
+class PopoverSettingsPage(Gtk.Grid):
+    pass
+
+
 class MainPage(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
         Gtk.Grid.__init__(self)
@@ -54,7 +135,6 @@ class MainPage(Gtk.Grid):
         self.set_row_spacing(10)
 
         self.settings: Gio.Settings = settings
-        self.settings.connect("changed", self.settings_changed)
 
         max_len_title: Gtk.Label = Gtk.Label()
         max_len_title.set_markup("<b>Maximum Length of:</b>")
@@ -315,8 +395,8 @@ class MainPage(Gtk.Grid):
 
 
 class OrderWidget(Gtk.Grid):
-    def __init__(self, settings: Gio.Settings, available_elements: set[str]):
-        Gtk.Grid.__init__(self)
+    def __init__(self, settings: Gio.Settings, available_elements: set[str], **kwargs):
+        Gtk.Grid.__init__(self, **kwargs)
         self.set_column_spacing(6)
         self.set_row_spacing(6)
 
@@ -335,10 +415,10 @@ class OrderWidget(Gtk.Grid):
         self.right_list_box: Gtk.ListBox = Gtk.ListBox()
         self.right_list_box.set_property("selection-mode", Gtk.SelectionMode.SINGLE)
 
-        left_frame = Gtk.Frame()
+        left_frame = Gtk.Frame(hexpand=True)
         left_frame.add(self.left_list_box)
 
-        right_frame = Gtk.Frame()
+        right_frame = Gtk.Frame(hexpand=True)
         right_frame.add(self.right_list_box)
 
         self.add_button: Gtk.Button = Gtk.Button.new_from_icon_name(
