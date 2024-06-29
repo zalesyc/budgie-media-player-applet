@@ -91,10 +91,11 @@ class BudgieMediaPlayer(Budgie.Applet):
             )
             if len(self.players_list) < 1:
                 new_view.add_panel_view(
-                    self.author_max_len,
-                    self.name_max_len,
-                    self.separator_text,
-                    self.element_order,
+                    author_max_len=self.author_max_len,
+                    title_max_len=self.name_max_len,
+                    separator_text=self.separator_text,
+                    element_order=self.element_order,
+                    orientation=self.orientation,
                 )
                 self.box.pack_start(new_view.panel_view, False, False, 0)
                 self.panel_player_service_name = new_view.service_name
@@ -133,6 +134,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                     title_max_len=self.name_max_len,
                     separator_text=self.separator_text,
                     element_order=self.element_order,
+                    orientation=self.orientation,
                 )
                 self.box.pack_start(value.panel_view, False, False, 0)
                 self.panel_player_service_name = value.service_name
@@ -146,6 +148,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             title_max_len=self.name_max_len,
             separator_text=self.separator_text,
             element_order=self.element_order,
+            orientation=self.orientation,
         )
         self.box.pack_start(self.players_list[service_name].panel_view, False, False, 0)
         self.panel_player_service_name = service_name
@@ -181,10 +184,11 @@ class BudgieMediaPlayer(Budgie.Applet):
             if len(self.players_list) < 1:
                 self.panel_player_service_name = new_view.service_name
                 new_view.add_panel_view(
-                    self.author_max_len,
-                    self.name_max_len,
-                    self.separator_text,
-                    self.element_order,
+                    author_max_len=self.author_max_len,
+                    title_max_len=self.name_max_len,
+                    separator_text=self.separator_text,
+                    element_order=self.element_order,
+                    orientation=self.orientation,
                 )
                 self.box.pack_start(new_view.panel_view, False, False, 0)
 
@@ -205,10 +209,11 @@ class BudgieMediaPlayer(Budgie.Applet):
             if len(self.players_list) > 0:
                 for player in self.players_list.values():
                     player.add_panel_view(
-                        self.author_max_len,
-                        self.name_max_len,
-                        self.separator_text,
-                        self.element_order,
+                        author_max_len=self.author_max_len,
+                        title_max_len=self.name_max_len,
+                        separator_text=self.separator_text,
+                        element_order=self.element_order,
+                        orientation=self.orientation,
                     )
                     self.box.pack_start(player.panel_view, False, False, 0)
                     self.panel_player_service_name = player.service_name

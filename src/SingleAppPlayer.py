@@ -147,6 +147,7 @@ class SingleAppPlayer(Gtk.Bin):
         title_max_len: int,
         separator_text: str,
         element_order: list[str],
+        orientation: Gtk.Orientation,
     ) -> None:
         self.panel_view = PanelControlView(
             dbus_player=self.dbus_player,
@@ -162,6 +163,7 @@ class SingleAppPlayer(Gtk.Bin):
             title_max_len=title_max_len,
             separator_text=separator_text,
             element_order=element_order,
+            orientation=orientation,
         )
 
         self.pinned_changed()

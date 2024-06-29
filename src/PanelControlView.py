@@ -35,6 +35,7 @@ class PanelControlView(Gtk.Box):
         title_max_len: int,
         separator_text: str,
         element_order: list[str],
+        orientation: Gtk.Orientation,
     ):
         Gtk.Box.__init__(self)
         self.dbus_player: MprisWrapper = dbus_player
@@ -137,6 +138,7 @@ class PanelControlView(Gtk.Box):
         )
 
         self.set_element_order(element_order, remove_previous=False)
+        self.set_orientation(orientation)
         self.show_all()
 
     # overridden parent method
