@@ -58,40 +58,35 @@ class PanelSettingsPage(Gtk.Grid):
             hexpand=True,
         )
 
-        max_len_title = Gtk.Label(
-            use_markup=True,
-            label="Maximum length of:",
-            tooltip_text="Maximum length, in characters",
+        max_len_title = LabelWSubtitle(
+            title="Maximum length of:",
+            subtitle="Maximum length, in characters, if set to 0 size will be unlimited",
             halign=Gtk.Align.START,
         )
 
-        max_len_author_label = LabelWSubtitle(
-            title="Author:",
-            subtitle="if set to 0 size will be unlimited",
+        max_len_author_label = Gtk.Label(
+            label="Author:",
             halign=Gtk.Align.START,
             margin_left=50,
         )
 
         max_len_author_value_spin = Gtk.SpinButton(
             hexpand=True,
-            halign=Gtk.Align.START,
         )
 
-        max_len_name_label = LabelWSubtitle(
-            title="Name:",
-            subtitle="if set to 0 size will be unlimited",
+        max_len_name_label = Gtk.Label(
+            label="Name:",
             halign=Gtk.Align.START,
             margin_left=50,
         )
 
         max_len_name_value_spin = Gtk.SpinButton(
             hexpand=True,
-            halign=Gtk.Align.START,
         )
 
         separator_label = LabelWSubtitle(
             title="Separator:",
-            subtitle="What symbol to use as the separator",
+            subtitle="Symbol to use as the separator",
         )
         separator_combo = Gtk.ComboBoxText(hexpand=True)
 
@@ -100,14 +95,15 @@ class PanelSettingsPage(Gtk.Grid):
             subtitle="The arrow opens the popup",
         )
         show_arrow_switch = Gtk.Switch(
-            hexpand=False,
+            # hexpand=False,
             halign=Gtk.Align.START,
+            valign=Gtk.Align.CENTER,
         )
 
         self.attach(order_label, 0, 0, 2, 1)
         self.attach(order_widget, 0, 1, 2, 1)
 
-        self.attach(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
 
         self.attach(max_len_title, 0, 3, 2, 1)
         self.attach(max_len_author_label, 0, 4, 1, 1)
@@ -115,7 +111,7 @@ class PanelSettingsPage(Gtk.Grid):
         self.attach(max_len_name_label, 0, 5, 1, 1)
         self.attach(max_len_name_value_spin, 1, 5, 1, 1)
 
-        self.attach(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
 
         self.attach(separator_label, 0, 7, 1, 1)
         self.attach(separator_combo, 1, 7, 1, 1)
