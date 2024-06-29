@@ -20,7 +20,7 @@ class SettingsPage(Gtk.Box):
         self.stack.set_transition_duration(100)
 
         self.stack.add_titled(PanelSettingsPage(settings), "panel", "Panel")
-        self.stack.add_titled(PopoverSettingsPage(), "popover", "Popup")
+        self.stack.add_titled(PopoverSettingsPage(settings), "popover", "Popup")
 
         stack_switcher = Gtk.StackSwitcher()
         stack_switcher.set_halign(Gtk.Align.CENTER)
@@ -124,7 +124,165 @@ class PanelSettingsPage(Gtk.Grid):
 
 
 class PopoverSettingsPage(Gtk.Grid):
-    pass
+    def __init__(self, settings: Gio.Settings):
+        Gtk.Grid.__init__(self)
+        self.set_column_homogeneous(False)
+        self.set_column_spacing(12)
+        self.set_row_spacing(12)
+        self.set_hexpand(True)
+
+        width_label = LabelWSubtitle(
+            title="Width:",
+            subtitle="Width of the popup in px",
+        )
+        width_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
+            min=80,
+            max=1000,
+            step=1,
+        )
+        width_scale.set_hexpand(True)
+
+        height_label = LabelWSubtitle(
+            title="Height:",
+            subtitle="Height of the popup in px",
+        )
+        height_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
+            min=80,
+            max=1000,
+            step=1,
+        )
+        height_scale.set_hexpand(True)
+
+        cover_size_label = LabelWSubtitle(
+            title="Album cover size:",
+            subtitle="Size of the album cover",
+        )
+        cover_size_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
+            min=40,
+            max=500,
+            step=1,
+        )
+        cover_size_scale.set_hexpand(True)
+
+        cover_size_note = Gtk.Label(
+            label='Note: <span weight="light">'
+            "If the selected album cover size is larger than "
+            "the popup dimensions the popup will be automatically expanded</span>",
+            use_markup=True,
+            wrap=True,
+            max_width_chars=1,
+            xalign=0.0,
+        )
+
+        text_style_label = LabelWSubtitle(
+            title="Popup text style:",
+            subtitle="Style of the text in the popup",
+        )
+
+        text_style_combobox = Gtk.ComboBoxText()
+        text_style_combobox.append("0", "Ellipt (Cut)")
+        text_style_combobox.append("1", "Scroll")
+
+        text_size_label = LabelWSubtitle(
+            title="Custom text size:",
+            subtitle="Whether to set a custom text size",
+            halign=Gtk.Align.START,
+        )
+
+        author_text_size_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            hexpand=False,
+            margin_left=10,
+        )
+        author_text_size_label = Gtk.Label(label="Author: ")
+        author_text_size_check = Gtk.CheckButton()
+        author_text_size_box.pack_start(author_text_size_check, False, False, 15)
+        author_text_size_box.pack_start(author_text_size_label, False, False, 0)
+
+        author_text_size_spin = Gtk.SpinButton.new_with_range(
+            min=3,
+            max=1000,
+            step=1,
+        )
+
+        name_text_size_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            hexpand=False,
+            margin_left=10,
+        )
+        name_text_size_label = Gtk.Label(label="Name:")
+        name_text_size_check = Gtk.CheckButton()
+        name_text_size_box.pack_start(name_text_size_check, False, False, 15)
+        name_text_size_box.pack_start(name_text_size_label, False, False, 0)
+        name_text_size_spin = Gtk.SpinButton.new_with_range(
+            min=3,
+            max=1000,
+            step=1,
+        )
+
+        scrolling_speed_label = LabelWSubtitle(
+            title="Scrolling speed:",
+            subtitle="Speed the text is scrolled when style set to scrolling",
+        )
+
+        scrolling_speed_author_label = Gtk.Label(
+            label="Author:",
+            halign=Gtk.Align.START,
+            margin_left=50,
+        )
+        scrolling_speed_author_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
+            min=1,
+            max=200,
+            step=1,
+        )
+
+        scrolling_speed_name_label = Gtk.Label(
+            label="Name:",
+            halign=Gtk.Align.START,
+            margin_left=50,
+        )
+        scrolling_speed_name_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
+            min=1,
+            max=200,
+            step=1,
+        )
+
+        self.attach(width_label, 0, 0, 1, 1)
+        self.attach(width_scale, 1, 0, 1, 1)
+        self.attach(height_label, 0, 1, 1, 1)
+        self.attach(height_scale, 1, 1, 1, 1)
+
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
+
+        self.attach(cover_size_label, 0, 3, 1, 1)
+        self.attach(cover_size_scale, 1, 3, 1, 1)
+        self.attach(cover_size_note, 0, 4, 2, 1)
+
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 5, 2, 1)
+
+        self.attach(text_style_label, 0, 6, 1, 1)
+        self.attach(text_style_combobox, 1, 6, 1, 1)
+
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 7, 2, 1)
+
+        self.attach(text_size_label, 0, 8, 2, 1)
+        self.attach(author_text_size_box, 0, 9, 1, 1)
+        self.attach(author_text_size_spin, 1, 9, 1, 1)
+        self.attach(name_text_size_box, 0, 10, 1, 1)
+        self.attach(name_text_size_spin, 1, 10, 1, 1)
+
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 11, 2, 1)
+
+        self.attach(scrolling_speed_label, 0, 12, 2, 1)
+        self.attach(scrolling_speed_author_label, 0, 13, 1, 1)
+        self.attach(scrolling_speed_author_scale, 1, 13, 1, 1)
+        self.attach(scrolling_speed_name_label, 0, 14, 1, 1)
+        self.attach(scrolling_speed_name_scale, 1, 14, 1, 1)
 
 
 class MainPage(Gtk.Grid):
