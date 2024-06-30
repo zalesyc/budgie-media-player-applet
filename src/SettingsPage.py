@@ -8,6 +8,7 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gtk, Gio, Pango
 
 from Labels import LabelWSubtitle
+from math import ceil
 
 
 class SettingsPage(Gtk.Box):
@@ -35,6 +36,7 @@ class SettingsPage(Gtk.Box):
 class PanelSettingsPage(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
         Gtk.Grid.__init__(self)
+        self.settings = settings
         self.set_column_homogeneous(False)
         self.set_column_spacing(12)
         self.set_row_spacing(12)
@@ -45,7 +47,7 @@ class PanelSettingsPage(Gtk.Grid):
             halign=Gtk.Align.START,
         )
         order_widget = OrderWidget(
-            settings,
+            self.settings,
             available_elements={
                 "album_cover",
                 "song_name",
@@ -70,8 +72,19 @@ class PanelSettingsPage(Gtk.Grid):
             margin_left=50,
         )
 
-        max_len_author_value_spin = Gtk.SpinButton(
-            hexpand=True,
+        max_len_author_value_spin = Gtk.SpinButton.new_with_range(
+            min=0,
+            max=100,
+            step=1,
+        )
+        max_len_author_value_spin.set_value(
+            self.settings.get_int("author-name-max-length")
+        )
+        max_len_author_value_spin.connect(
+            "value-changed",
+            lambda spin: self.settings.set_int(
+                "author-name-max-length", spin.get_value_as_int()
+            ),
         )
 
         max_len_name_label = Gtk.Label(
@@ -80,25 +93,50 @@ class PanelSettingsPage(Gtk.Grid):
             margin_left=50,
         )
 
-        max_len_name_value_spin = Gtk.SpinButton(
-            hexpand=True,
+        max_len_name_value_spin = Gtk.SpinButton.new_with_range(
+            min=0,
+            max=100,
+            step=1,
+        )
+        max_len_name_value_spin.set_value(
+            self.settings.get_int("media-title-max-length")
+        )
+        max_len_name_value_spin.connect(
+            "value-changed",
+            lambda spin: self.settings.set_int(
+                "media-title-max-length", spin.get_value_as_int()
+            ),
         )
 
         separator_label = LabelWSubtitle(
             title="Separator:",
             subtitle="Symbol to use as the separator",
         )
-        separator_combo = Gtk.ComboBoxText(hexpand=True)
+        separator_combo = Gtk.ComboBoxText()
+        available_separators = ("-", ":", "·")
+        for separator in available_separators:
+            separator_combo.append(separator, separator)
+
+        if (sep := self.settings.get_string("separator-text")) in available_separators:
+            separator_combo.set_active_id(sep)
+
+        separator_combo.connect(
+            "changed",
+            lambda combo: self.settings.set_string(
+                "separator-text", combo.get_active_id()
+            ),
+        )
 
         show_arrow_label = LabelWSubtitle(
             title="Show arrow:",
             subtitle="The arrow opens the popup",
         )
         show_arrow_switch = Gtk.Switch(
-            # hexpand=False,
             halign=Gtk.Align.START,
             valign=Gtk.Align.CENTER,
+            active=self.settings.get_boolean("show-arrow"),
         )
+        show_arrow_switch.connect("state_set", self.show_arrow_changed)
 
         self.attach(order_label, 0, 0, 2, 1)
         self.attach(order_widget, 0, 1, 2, 1)
@@ -118,10 +156,15 @@ class PanelSettingsPage(Gtk.Grid):
         self.attach(show_arrow_label, 0, 8, 1, 1)
         self.attach(show_arrow_switch, 1, 8, 1, 1)
 
+    def show_arrow_changed(self, _, new_state: bool) -> bool:
+        self.settings.set_boolean("show-arrow", new_state)
+        return False
+
 
 class PopoverSettingsPage(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
         Gtk.Grid.__init__(self)
+        self.settings = settings
         self.set_column_homogeneous(False)
         self.set_column_spacing(12)
         self.set_row_spacing(12)
@@ -138,6 +181,13 @@ class PopoverSettingsPage(Gtk.Grid):
             step=1,
         )
         width_scale.set_hexpand(True)
+        width_scale.set_value(self.settings.get_uint("popover-width"))
+        width_scale.connect(
+            "value-changed",
+            lambda slider: self.settings.set_uint(
+                "popover-width", round(slider.get_value())
+            ),
+        )
 
         height_label = LabelWSubtitle(
             title="Height:",
@@ -150,6 +200,13 @@ class PopoverSettingsPage(Gtk.Grid):
             step=1,
         )
         height_scale.set_hexpand(True)
+        height_scale.set_value(self.settings.get_uint("popover-height"))
+        height_scale.connect(
+            "value-changed",
+            lambda slider: self.settings.set_uint(
+                "popover-height", round(slider.get_value())
+            ),
+        )
 
         cover_size_label = LabelWSubtitle(
             title="Album cover size:",
@@ -162,6 +219,13 @@ class PopoverSettingsPage(Gtk.Grid):
             step=1,
         )
         cover_size_scale.set_hexpand(True)
+        cover_size_scale.set_value(self.settings.get_uint("popover-album-cover-size"))
+        cover_size_scale.connect(
+            "value-changed",
+            lambda slider: self.settings.set_uint(
+                "popover-album-cover-size", round(slider.get_value())
+            ),
+        )
 
         cover_size_note = Gtk.Label(
             label='Note: <span weight="light">'
@@ -181,6 +245,10 @@ class PopoverSettingsPage(Gtk.Grid):
         text_style_combobox = Gtk.ComboBoxText()
         text_style_combobox.append("0", "Ellipt (Cut)")
         text_style_combobox.append("1", "Scroll")
+        text_style_combobox.set_active_id(
+            str(self.settings.get_uint("plasma-popover-text-style"))
+        )
+        text_style_combobox.connect("changed", self.text_style_combo_changed)
 
         text_size_label = LabelWSubtitle(
             title="Custom text size:",
@@ -194,14 +262,30 @@ class PopoverSettingsPage(Gtk.Grid):
             margin_left=10,
         )
         author_text_size_label = Gtk.Label(label="Author: ")
-        author_text_size_check = Gtk.CheckButton()
+        author_text_size_value = self.settings.get_int(
+            "plasma-popover-media-author-size"
+        )
+        author_text_size_check = Gtk.CheckButton(active=author_text_size_value >= 0)
         author_text_size_box.pack_start(author_text_size_check, False, False, 15)
         author_text_size_box.pack_start(author_text_size_label, False, False, 0)
-
         author_text_size_spin = Gtk.SpinButton.new_with_range(
             min=3,
             max=1000,
             step=1,
+        )
+        author_text_size_spin.set_value(max(abs(author_text_size_value), 3))
+        author_text_size_spin.set_sensitive(author_text_size_value >= 0)
+        author_text_size_check.connect(
+            "toggled",
+            lambda check: self._enabled_spin_check_changed(
+                check, author_text_size_spin, "plasma-popover-media-author-size"
+            ),
+        )
+        author_text_size_spin.connect(
+            "value-changed",
+            lambda spin: self.settings.set_int(
+                "plasma-popover-media-author-size", spin.get_value_as_int()
+            ),
         )
 
         name_text_size_box = Gtk.Box(
@@ -210,13 +294,30 @@ class PopoverSettingsPage(Gtk.Grid):
             margin_left=10,
         )
         name_text_size_label = Gtk.Label(label="Name:")
-        name_text_size_check = Gtk.CheckButton()
+        name_text_size_value = self.settings.get_int("plasma-popover-media-name-size")
+        name_text_size_check = Gtk.CheckButton(
+            active=author_text_size_value >= 0,
+        )
         name_text_size_box.pack_start(name_text_size_check, False, False, 15)
         name_text_size_box.pack_start(name_text_size_label, False, False, 0)
         name_text_size_spin = Gtk.SpinButton.new_with_range(
             min=3,
             max=1000,
             step=1,
+        )
+        name_text_size_spin.set_value(max(name_text_size_value, 3))
+        name_text_size_spin.set_sensitive(name_text_size_value >= 0)
+        name_text_size_check.connect(
+            "toggled",
+            lambda check: self._enabled_spin_check_changed(
+                check, name_text_size_spin, "plasma-popover-media-name-size"
+            ),
+        )
+        name_text_size_spin.connect(
+            "value-changed",
+            lambda spin: self.settings.set_int(
+                "plasma-popover-media-name-size", spin.get_value_as_int()
+            ),
         )
 
         scrolling_speed_label = LabelWSubtitle(
@@ -229,11 +330,26 @@ class PopoverSettingsPage(Gtk.Grid):
             halign=Gtk.Align.START,
             margin_left=50,
         )
-        scrolling_speed_author_scale = Gtk.Scale.new_with_range(
+        self.scrolling_speed_author_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
             min=1,
             max=200,
             step=1,
+        )
+        self.scrolling_speed_author_scale.set_value(
+            ceil(
+                self.settings.get_double("plasma-popover-media-author-scrolling-speed")
+                * 4
+            )
+        )
+        self.scrolling_speed_author_scale.set_sensitive(
+            settings.get_uint("plasma-popover-text-style") == 1
+        )
+        self.scrolling_speed_author_scale.connect(
+            "value-changed",
+            lambda scale: self.settings.set_double(
+                "plasma-popover-media-author-scrolling-speed", scale.get_value() / 4
+            ),
         )
 
         scrolling_speed_name_label = Gtk.Label(
@@ -241,11 +357,26 @@ class PopoverSettingsPage(Gtk.Grid):
             halign=Gtk.Align.START,
             margin_left=50,
         )
-        scrolling_speed_name_scale = Gtk.Scale.new_with_range(
+        self.scrolling_speed_name_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
             min=1,
             max=200,
             step=1,
+        )
+        self.scrolling_speed_name_scale.set_value(
+            ceil(
+                self.settings.get_double("plasma-popover-media-name-scrolling-speed")
+                * 4
+            )
+        )
+        self.scrolling_speed_name_scale.set_sensitive(
+            settings.get_uint("plasma-popover-text-style") == 1
+        )
+        self.scrolling_speed_name_scale.connect(
+            "value-changed",
+            lambda scale: self.settings.set_double(
+                "plasma-popover-media-name-scrolling-speed", scale.get_value() / 4
+            ),
         )
 
         self.attach(width_label, 0, 0, 1, 1)
@@ -276,9 +407,42 @@ class PopoverSettingsPage(Gtk.Grid):
 
         self.attach(scrolling_speed_label, 0, 12, 2, 1)
         self.attach(scrolling_speed_author_label, 0, 13, 1, 1)
-        self.attach(scrolling_speed_author_scale, 1, 13, 1, 1)
+        self.attach(self.scrolling_speed_author_scale, 1, 13, 1, 1)
         self.attach(scrolling_speed_name_label, 0, 14, 1, 1)
-        self.attach(scrolling_speed_name_scale, 1, 14, 1, 1)
+        self.attach(self.scrolling_speed_name_scale, 1, 14, 1, 1)
+
+    def text_style_combo_changed(self, combo: Gtk.ComboBox) -> None:
+        value = 0
+        try:
+            value = int(combo.get_active_id())
+        except ValueError:
+            pass
+
+        self.settings.set_uint("plasma-popover-text-style", value)
+
+        self.scrolling_speed_name_scale.set_sensitive(value == 1)
+        self.scrolling_speed_author_scale.set_sensitive(value == 1)
+
+    def _enabled_spin_check_changed(
+        self, check: Gtk.ToggleButton, spin: Gtk.SpinButton, settings_key: str
+    ) -> None:
+        """
+        This a general callback func for when you have a spin button
+        that is enabled by a checkbox
+        """
+        new_state = check.get_active()
+        old_value = self.settings.get_int(settings_key)
+        print(f"{old_value=}")
+        if new_state:
+            new_value = max(abs(old_value), 3)
+            spin.set_value(new_value)
+            spin.set_sensitive(True)
+        else:
+            new_value = -max(abs(old_value), 3)
+            spin.set_value(-new_value)
+            spin.set_sensitive(False)
+
+        self.settings.set_int(settings_key, new_value)
 
 
 class MainPage(Gtk.Grid):

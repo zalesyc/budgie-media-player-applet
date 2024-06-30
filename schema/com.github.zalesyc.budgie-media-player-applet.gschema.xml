@@ -3,13 +3,13 @@
     <schema id="com.github.zalesyc.budgie-media-player-applet">
         <key type="i" name="author-name-max-length">
             <summary>Maximum length of author's name</summary>
-            <description>The maximum length, in characters, of the playing media author's name.</description>
+            <description>The maximum length, in characters, of the playing media author's name, if 0 use system default.</description>
 	        <default>25</default>
         </key>
 
         <key type="i" name="media-title-max-length">
             <summary>Maximum length of the playing media's title</summary>
-            <description>The maximum length, in characters, of the playing media's title.</description>
+            <description>The maximum length, in characters, of the playing media's title, if 0 use system default.</description>
 	        <default>40</default>
         </key>
         <key type="as" name="element-order">
