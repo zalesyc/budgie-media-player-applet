@@ -275,14 +275,24 @@ class PanelControlView(Gtk.Box):
                 str_author = ", ".join(author)
                 self.set_separator_text(self.separator_text)
 
-        self.song_author_label.set_label(
-            (str_author[: self.author_max_len - 3] + "...")
-            if len(str_author) > self.author_max_len
-            else str_author
-        )
+        if self.author_max_len < 0:
+            self.song_author_label.set_label(str_author)
+        elif self.author_max_len < 3:
+            self.song_author_label.set_label("...")
+        else:
+            self.song_author_label.set_label(
+                (str_author[: self.author_max_len - 3] + "...")
+                if len(str_author) > self.author_max_len
+                else str_author
+            )
 
-        self.song_name_label.set_label(
-            (str_title[: self.name_max_len - 3] + "...")
-            if len(str_title) > self.name_max_len
-            else str_title
-        )
+        if self.name_max_len < 0:
+            self.song_name_label.set_label(str_title)
+        elif self.name_max_len < 3:
+            self.song_name_label.set_label("...")
+        else:
+            self.song_name_label.set_label(
+                (str_title[: self.name_max_len - 3] + "...")
+                if len(str_title) > self.name_max_len
+                else str_title
+            )
