@@ -273,7 +273,7 @@ class PanelControlView(Gtk.Box):
                 str_author = ", ".join(author)
                 self.set_separator_text(self.separator_text)
 
-        if self.author_max_len <= 0:
+        if self.author_max_len < 0:
             self.song_author_label.set_label(str_author)
         elif self.author_max_len < 3:
             self.song_author_label.set_label("...")
@@ -284,7 +284,7 @@ class PanelControlView(Gtk.Box):
                 else str_author
             )
 
-        if self.name_max_len <= 0:
+        if self.name_max_len < 0:
             self.song_name_label.set_label(str_title)
         elif self.name_max_len < 3:
             self.song_name_label.set_label("...")

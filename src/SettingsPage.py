@@ -9,6 +9,7 @@ from gi.repository import Gtk, Gio, Pango
 
 from Labels import LabelWSubtitle
 from math import ceil
+from typing import Union
 
 
 class SettingsPage(Gtk.Box):
@@ -33,13 +34,42 @@ class SettingsPage(Gtk.Box):
         self.show_all()
 
 
-class PanelSettingsPage(Gtk.Grid):
+class _SettingsPageBase(Gtk.Grid):
     def __init__(self, settings: Gio.Settings):
         Gtk.Grid.__init__(self)
         self.settings = settings
         self.set_column_homogeneous(False)
         self.set_column_spacing(12)
         self.set_row_spacing(12)
+
+    def _enabled_spin_check_changed(
+        self,
+        check: Gtk.ToggleButton,
+        spin: Union[Gtk.SpinButton, Gtk.Range],
+        settings_key: str,
+        min_value: int = 3,
+    ) -> None:
+        """
+        This a general callback func for when you have a spin button / scale
+        that is enabled by a checkbox
+        """
+        new_state = check.get_active()
+        old_value = self.settings.get_int(settings_key)
+        if new_state:
+            new_value = max(abs(old_value), min_value)
+            spin.set_value(new_value)
+            spin.set_sensitive(True)
+        else:
+            new_value = -max(abs(old_value), min_value)
+            spin.set_value(-new_value)
+            spin.set_sensitive(False)
+
+        self.settings.set_int(settings_key, new_value)
+
+
+class PanelSettingsPage(_SettingsPageBase):
+    def __init__(self, settings: Gio.Settings):
+        super().__init__(settings)
 
         order_label = LabelWSubtitle(
             title="Element order:",
@@ -62,46 +92,74 @@ class PanelSettingsPage(Gtk.Grid):
 
         max_len_title = LabelWSubtitle(
             title="Maximum length of:",
-            subtitle="Maximum length, in characters, if set to 0 size will be unlimited",
+            subtitle="Maximum length, in characters, if disabled size will be unlimited",
             halign=Gtk.Align.START,
         )
 
+        max_len_author_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            hexpand=False,
+            margin_left=10,
+        )
         max_len_author_label = Gtk.Label(
             label="Author:",
             halign=Gtk.Align.START,
-            margin_left=50,
         )
-
-        max_len_author_value_spin = Gtk.SpinButton.new_with_range(
-            min=0,
+        max_len_author_value = self.settings.get_int("author-name-max-length")
+        max_len_author_check = Gtk.CheckButton(active=max_len_author_value >= 0)
+        max_len_author_spin = Gtk.SpinButton.new_with_range(
+            min=5,
             max=100,
             step=1,
         )
-        max_len_author_value_spin.set_value(
-            self.settings.get_int("author-name-max-length")
+        max_len_author_box.pack_start(max_len_author_check, False, False, 15)
+        max_len_author_box.pack_start(max_len_author_label, False, False, 0)
+        max_len_author_spin.set_value(max(abs(max_len_author_value), 5))
+        max_len_author_check.connect(
+            "toggled",
+            lambda check: self._enabled_spin_check_changed(
+                check,
+                max_len_author_spin,
+                "author-name-max-length",
+                min_value=5,
+            ),
         )
-        max_len_author_value_spin.connect(
+        max_len_author_spin.connect(
             "value-changed",
             lambda spin: self.settings.set_int(
                 "author-name-max-length", spin.get_value_as_int()
             ),
         )
 
+        max_len_name_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            hexpand=False,
+            margin_left=10,
+        )
         max_len_name_label = Gtk.Label(
             label="Name:",
             halign=Gtk.Align.START,
-            margin_left=50,
         )
-
-        max_len_name_value_spin = Gtk.SpinButton.new_with_range(
-            min=0,
+        max_len_name_value = self.settings.get_int("media-title-max-length")
+        max_len_name_check = Gtk.CheckButton(active=max_len_name_value >= 0)
+        max_len_name_spin = Gtk.SpinButton.new_with_range(
+            min=5,
             max=100,
             step=1,
         )
-        max_len_name_value_spin.set_value(
-            self.settings.get_int("media-title-max-length")
+        max_len_name_spin.set_value(max(abs(max_len_name_value), 5))
+        max_len_name_box.pack_start(max_len_name_check, False, False, 15)
+        max_len_name_box.pack_start(max_len_name_label, False, False, 0)
+        max_len_name_check.connect(
+            "toggled",
+            lambda check: self._enabled_spin_check_changed(
+                check,
+                max_len_name_spin,
+                "media-title-max-length",
+                min_value=5,
+            ),
         )
-        max_len_name_value_spin.connect(
+        max_len_name_spin.connect(
             "value-changed",
             lambda spin: self.settings.set_int(
                 "media-title-max-length", spin.get_value_as_int()
@@ -144,10 +202,10 @@ class PanelSettingsPage(Gtk.Grid):
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
 
         self.attach(max_len_title, 0, 3, 2, 1)
-        self.attach(max_len_author_label, 0, 4, 1, 1)
-        self.attach(max_len_author_value_spin, 1, 4, 1, 1)
-        self.attach(max_len_name_label, 0, 5, 1, 1)
-        self.attach(max_len_name_value_spin, 1, 5, 1, 1)
+        self.attach(max_len_author_box, 0, 4, 1, 1)
+        self.attach(max_len_author_spin, 1, 4, 1, 1)
+        self.attach(max_len_name_box, 0, 5, 1, 1)
+        self.attach(max_len_name_spin, 1, 5, 1, 1)
 
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
 
@@ -161,14 +219,9 @@ class PanelSettingsPage(Gtk.Grid):
         return False
 
 
-class PopoverSettingsPage(Gtk.Grid):
+class PopoverSettingsPage(_SettingsPageBase):
     def __init__(self, settings: Gio.Settings):
-        Gtk.Grid.__init__(self)
-        self.settings = settings
-        self.set_column_homogeneous(False)
-        self.set_column_spacing(12)
-        self.set_row_spacing(12)
-        self.set_hexpand(True)
+        super().__init__(settings)
 
         width_label = LabelWSubtitle(
             title="Width:",
@@ -422,27 +475,6 @@ class PopoverSettingsPage(Gtk.Grid):
 
         self.scrolling_speed_name_scale.set_sensitive(value == 1)
         self.scrolling_speed_author_scale.set_sensitive(value == 1)
-
-    def _enabled_spin_check_changed(
-        self, check: Gtk.ToggleButton, spin: Gtk.SpinButton, settings_key: str
-    ) -> None:
-        """
-        This a general callback func for when you have a spin button
-        that is enabled by a checkbox
-        """
-        new_state = check.get_active()
-        old_value = self.settings.get_int(settings_key)
-        print(f"{old_value=}")
-        if new_state:
-            new_value = max(abs(old_value), 3)
-            spin.set_value(new_value)
-            spin.set_sensitive(True)
-        else:
-            new_value = -max(abs(old_value), 3)
-            spin.set_value(-new_value)
-            spin.set_sensitive(False)
-
-        self.settings.set_int(settings_key, new_value)
 
 
 class MainPage(Gtk.Grid):
