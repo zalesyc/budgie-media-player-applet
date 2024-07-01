@@ -5,7 +5,7 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
-from gi.repository import Gtk, Gio, Pango
+from gi.repository import Gtk, Gio
 
 from Labels import LabelWSubtitle
 from math import ceil
@@ -96,41 +96,6 @@ class PanelSettingsPage(_SettingsPageBase):
             halign=Gtk.Align.START,
         )
 
-        max_len_author_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            hexpand=False,
-            margin_left=10,
-        )
-        max_len_author_label = Gtk.Label(
-            label="Author:",
-            halign=Gtk.Align.START,
-        )
-        max_len_author_value = self.settings.get_int("author-name-max-length")
-        max_len_author_check = Gtk.CheckButton(active=max_len_author_value >= 0)
-        max_len_author_spin = Gtk.SpinButton.new_with_range(
-            min=5,
-            max=100,
-            step=1,
-        )
-        max_len_author_box.pack_start(max_len_author_check, False, False, 15)
-        max_len_author_box.pack_start(max_len_author_label, False, False, 0)
-        max_len_author_spin.set_value(max(abs(max_len_author_value), 5))
-        max_len_author_check.connect(
-            "toggled",
-            lambda check: self._enabled_spin_check_changed(
-                check,
-                max_len_author_spin,
-                "author-name-max-length",
-                min_value=5,
-            ),
-        )
-        max_len_author_spin.connect(
-            "value-changed",
-            lambda spin: self.settings.set_int(
-                "author-name-max-length", spin.get_value_as_int()
-            ),
-        )
-
         max_len_name_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             hexpand=False,
@@ -163,6 +128,41 @@ class PanelSettingsPage(_SettingsPageBase):
             "value-changed",
             lambda spin: self.settings.set_int(
                 "media-title-max-length", spin.get_value_as_int()
+            ),
+        )
+
+        max_len_author_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            hexpand=False,
+            margin_left=10,
+        )
+        max_len_author_label = Gtk.Label(
+            label="Author:",
+            halign=Gtk.Align.START,
+        )
+        max_len_author_value = self.settings.get_int("author-name-max-length")
+        max_len_author_check = Gtk.CheckButton(active=max_len_author_value >= 0)
+        max_len_author_spin = Gtk.SpinButton.new_with_range(
+            min=5,
+            max=100,
+            step=1,
+        )
+        max_len_author_box.pack_start(max_len_author_check, False, False, 15)
+        max_len_author_box.pack_start(max_len_author_label, False, False, 0)
+        max_len_author_spin.set_value(max(abs(max_len_author_value), 5))
+        max_len_author_check.connect(
+            "toggled",
+            lambda check: self._enabled_spin_check_changed(
+                check,
+                max_len_author_spin,
+                "author-name-max-length",
+                min_value=5,
+            ),
+        )
+        max_len_author_spin.connect(
+            "value-changed",
+            lambda spin: self.settings.set_int(
+                "author-name-max-length", spin.get_value_as_int()
             ),
         )
 
@@ -202,10 +202,10 @@ class PanelSettingsPage(_SettingsPageBase):
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
 
         self.attach(max_len_title, 0, 3, 2, 1)
-        self.attach(max_len_author_box, 0, 4, 1, 1)
-        self.attach(max_len_author_spin, 1, 4, 1, 1)
-        self.attach(max_len_name_box, 0, 5, 1, 1)
-        self.attach(max_len_name_spin, 1, 5, 1, 1)
+        self.attach(max_len_name_box, 0, 4, 1, 1)
+        self.attach(max_len_name_spin, 1, 4, 1, 1)
+        self.attach(max_len_author_box, 0, 5, 1, 1)
+        self.attach(max_len_author_spin, 1, 5, 1, 1)
 
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
 
@@ -309,38 +309,6 @@ class PopoverSettingsPage(_SettingsPageBase):
             halign=Gtk.Align.START,
         )
 
-        author_text_size_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            hexpand=False,
-            margin_left=10,
-        )
-        author_text_size_label = Gtk.Label(label="Author: ")
-        author_text_size_value = self.settings.get_int(
-            "plasma-popover-media-author-size"
-        )
-        author_text_size_check = Gtk.CheckButton(active=author_text_size_value >= 0)
-        author_text_size_box.pack_start(author_text_size_check, False, False, 15)
-        author_text_size_box.pack_start(author_text_size_label, False, False, 0)
-        author_text_size_spin = Gtk.SpinButton.new_with_range(
-            min=3,
-            max=1000,
-            step=1,
-        )
-        author_text_size_spin.set_value(max(abs(author_text_size_value), 3))
-        author_text_size_spin.set_sensitive(author_text_size_value >= 0)
-        author_text_size_check.connect(
-            "toggled",
-            lambda check: self._enabled_spin_check_changed(
-                check, author_text_size_spin, "plasma-popover-media-author-size"
-            ),
-        )
-        author_text_size_spin.connect(
-            "value-changed",
-            lambda spin: self.settings.set_int(
-                "plasma-popover-media-author-size", spin.get_value_as_int()
-            ),
-        )
-
         name_text_size_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             hexpand=False,
@@ -373,36 +341,41 @@ class PopoverSettingsPage(_SettingsPageBase):
             ),
         )
 
+        author_text_size_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            hexpand=False,
+            margin_left=10,
+        )
+        author_text_size_label = Gtk.Label(label="Author: ")
+        author_text_size_value = self.settings.get_int(
+            "plasma-popover-media-author-size"
+        )
+        author_text_size_check = Gtk.CheckButton(active=author_text_size_value >= 0)
+        author_text_size_box.pack_start(author_text_size_check, False, False, 15)
+        author_text_size_box.pack_start(author_text_size_label, False, False, 0)
+        author_text_size_spin = Gtk.SpinButton.new_with_range(
+            min=3,
+            max=1000,
+            step=1,
+        )
+        author_text_size_spin.set_value(max(abs(author_text_size_value), 3))
+        author_text_size_spin.set_sensitive(author_text_size_value >= 0)
+        author_text_size_check.connect(
+            "toggled",
+            lambda check: self._enabled_spin_check_changed(
+                check, author_text_size_spin, "plasma-popover-media-author-size"
+            ),
+        )
+        author_text_size_spin.connect(
+            "value-changed",
+            lambda spin: self.settings.set_int(
+                "plasma-popover-media-author-size", spin.get_value_as_int()
+            ),
+        )
+
         scrolling_speed_label = LabelWSubtitle(
             title="Scrolling speed:",
             subtitle="Speed the text is scrolled when style set to scrolling",
-        )
-
-        scrolling_speed_author_label = Gtk.Label(
-            label="Author:",
-            halign=Gtk.Align.START,
-            margin_left=50,
-        )
-        self.scrolling_speed_author_scale = Gtk.Scale.new_with_range(
-            Gtk.Orientation.HORIZONTAL,
-            min=1,
-            max=200,
-            step=1,
-        )
-        self.scrolling_speed_author_scale.set_value(
-            ceil(
-                self.settings.get_double("plasma-popover-media-author-scrolling-speed")
-                * 4
-            )
-        )
-        self.scrolling_speed_author_scale.set_sensitive(
-            settings.get_uint("plasma-popover-text-style") == 1
-        )
-        self.scrolling_speed_author_scale.connect(
-            "value-changed",
-            lambda scale: self.settings.set_double(
-                "plasma-popover-media-author-scrolling-speed", scale.get_value() / 4
-            ),
         )
 
         scrolling_speed_name_label = Gtk.Label(
@@ -432,6 +405,33 @@ class PopoverSettingsPage(_SettingsPageBase):
             ),
         )
 
+        scrolling_speed_author_label = Gtk.Label(
+            label="Author:",
+            halign=Gtk.Align.START,
+            margin_left=50,
+        )
+        self.scrolling_speed_author_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
+            min=1,
+            max=200,
+            step=1,
+        )
+        self.scrolling_speed_author_scale.set_value(
+            ceil(
+                self.settings.get_double("plasma-popover-media-author-scrolling-speed")
+                * 4
+            )
+        )
+        self.scrolling_speed_author_scale.set_sensitive(
+            settings.get_uint("plasma-popover-text-style") == 1
+        )
+        self.scrolling_speed_author_scale.connect(
+            "value-changed",
+            lambda scale: self.settings.set_double(
+                "plasma-popover-media-author-scrolling-speed", scale.get_value() / 4
+            ),
+        )
+
         self.attach(width_label, 0, 0, 1, 1)
         self.attach(width_scale, 1, 0, 1, 1)
         self.attach(height_label, 0, 1, 1, 1)
@@ -451,18 +451,18 @@ class PopoverSettingsPage(_SettingsPageBase):
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 7, 2, 1)
 
         self.attach(text_size_label, 0, 8, 2, 1)
-        self.attach(author_text_size_box, 0, 9, 1, 1)
-        self.attach(author_text_size_spin, 1, 9, 1, 1)
-        self.attach(name_text_size_box, 0, 10, 1, 1)
-        self.attach(name_text_size_spin, 1, 10, 1, 1)
+        self.attach(name_text_size_box, 0, 9, 1, 1)
+        self.attach(name_text_size_spin, 1, 9, 1, 1)
+        self.attach(author_text_size_box, 0, 10, 1, 1)
+        self.attach(author_text_size_spin, 1, 10, 1, 1)
 
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 11, 2, 1)
 
         self.attach(scrolling_speed_label, 0, 12, 2, 1)
-        self.attach(scrolling_speed_author_label, 0, 13, 1, 1)
-        self.attach(self.scrolling_speed_author_scale, 1, 13, 1, 1)
-        self.attach(scrolling_speed_name_label, 0, 14, 1, 1)
-        self.attach(self.scrolling_speed_name_scale, 1, 14, 1, 1)
+        self.attach(scrolling_speed_name_label, 0, 13, 1, 1)
+        self.attach(self.scrolling_speed_name_scale, 1, 13, 1, 1)
+        self.attach(scrolling_speed_author_label, 0, 14, 1, 1)
+        self.attach(self.scrolling_speed_author_scale, 1, 14, 1, 1)
 
     def text_style_combo_changed(self, combo: Gtk.ComboBox) -> None:
         value = 0
