@@ -45,7 +45,7 @@
         <key type="u" name="plasma-popover-text-style">
             <summary>Style of the name and author text in the plasma popover</summary>
             <description>Style of the name and author text in the plasma popover, ellipting: 0, scrolling (marquee): 1.</description>
-            <default>1</default>
+            <default>0</default>
         </key>
         <key type="i" name="plasma-popover-media-name-size">
             <summary>Size of the name text in the plasma popover</summary>
