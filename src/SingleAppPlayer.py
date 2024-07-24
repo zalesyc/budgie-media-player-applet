@@ -487,3 +487,33 @@ class SingleAppPlayer(Gtk.Bin):
                         return
 
         self.icon.set_from_icon_name("multimedia-player-symbolic", self.ICON_SIZE)
+
+    def _get_resized_pixbuf(
+        self, available_height: int, available_width: int, portion_to_fill: float
+    ) -> GdkPixbuf:
+        square_size = min(
+            available_height,
+            round(available_width * portion_to_fill),
+        )
+        if (
+            self.album_cover_data.song_cover_pixbuf.get_width()
+            < self.album_cover_data.song_cover_pixbuf.get_height()
+        ):
+            resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
+                int(
+                    (square_size / self.album_cover_data.song_cover_pixbuf.get_height())
+                    * self.album_cover_data.song_cover_pixbuf.get_width()
+                ),
+                square_size,
+                GdkPixbuf.InterpType.BILINEAR,
+            )
+        else:
+            resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
+                square_size,
+                int(
+                    (square_size / self.album_cover_data.song_cover_pixbuf.get_width())
+                    * self.album_cover_data.song_cover_pixbuf.get_height()
+                ),
+                GdkPixbuf.InterpType.BILINEAR,
+            )
+        return resized_pixbuf

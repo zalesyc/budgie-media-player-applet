@@ -11,8 +11,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
 gi.require_version("Gio", "2.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gtk, GdkPixbuf, GLib, Gio
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, GLib, Gio, Gdk
 
 
 class TextStyle(IntEnum):
@@ -39,7 +39,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         on_pin_clicked: Callable[[str], None],
         settings: Gio.Settings,
     ):
-        self.album_cover_size: int = settings.get_uint("popover-album-cover-size")
+        self.album_cover_size: float = settings.get_double(
+            "popover-album-cover-size"
+        )  # this is a portion of the available space
         self.text_style: TextStyle = TextStyle.insert(
             settings.get_uint("plasma-popover-text-style"),
             default=TextStyle.ellipsis,
@@ -85,7 +87,9 @@ class PopupPlasmaControlView(SingleAppPlayer):
         )
 
         # album cover
-        self.info_layout_hbox.pack_start(self.album_cover, False, False, 0)
+        self._should_set_album_cover = False
+        self.album_cover.connect("size-allocate", self._on_album_cover_size_allocate)
+        self.info_layout_hbox.pack_start(self.album_cover, True, True, 0)
 
         # song name label
         song_name_size = settings.get_int("plasma-popover-media-name-size")
@@ -208,7 +212,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def pin_clicked(self, *_) -> None:
         self.on_pin_clicked(self.service_name)
 
-    def set_popover_album_cover_size(self, new_size: int) -> None:
+    def set_popover_album_cover_size(self, new_size: float) -> None:
         self.album_cover_size = new_size
         self.album_cover_changed()
 
@@ -289,34 +293,19 @@ class PopupPlasmaControlView(SingleAppPlayer):
     # overridden parent method
     def album_cover_changed(self) -> None:
         if self.album_cover_data.cover_type == AlbumCoverType.Pixbuf:
-            if (
-                self.album_cover_data.song_cover_pixbuf.get_width()
-                < self.album_cover_data.song_cover_pixbuf.get_height()
-            ):
-                resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
-                    int(
-                        (
-                            self.album_cover_size
-                            / self.album_cover_data.song_cover_pixbuf.get_height()
-                        )
-                        * self.album_cover_data.song_cover_pixbuf.get_width()
-                    ),
-                    self.album_cover_size,
-                    GdkPixbuf.InterpType.BILINEAR,
-                )
+            allocated_width = self.album_cover.get_allocated_width()
+            allocated_height = self.album_cover.get_allocated_height()
+            if allocated_width <= 1 or allocated_height <= 1:
+                # wait for allocation in the size-allocate signal
+                self._should_set_album_cover = True
             else:
-                resized_pixbuf = self.album_cover_data.song_cover_pixbuf.scale_simple(
-                    self.album_cover_size,
-                    int(
-                        (
-                            self.album_cover_size
-                            / self.album_cover_data.song_cover_pixbuf.get_width()
-                        )
-                        * self.album_cover_data.song_cover_pixbuf.get_height()
-                    ),
-                    GdkPixbuf.InterpType.BILINEAR,
+                self.album_cover.set_from_pixbuf(
+                    self._get_resized_pixbuf(
+                        allocated_height,
+                        allocated_width,
+                        self.album_cover_size,
+                    )
                 )
-            self.album_cover.set_from_pixbuf(resized_pixbuf)
 
         elif self.album_cover_data.cover_type == AlbumCoverType.Gicon:
             self.album_cover.set_from_gicon(
@@ -383,6 +372,14 @@ class PopupPlasmaControlView(SingleAppPlayer):
             speed = settings.get_double("plasma-popover-media-author-scrolling-speed")
             self.song_author_label.set_speed(speed)
             return
+
+    def _on_album_cover_size_allocate(self, _, rect: Gdk.Rectangle) -> None:
+        if not self._should_set_album_cover:
+            return
+
+        self.album_cover.set_from_pixbuf(
+            self._get_resized_pixbuf(rect.height, rect.width, self.album_cover_size)
+        )
 
     def _create_timer(self) -> None:
         for key in self.timers_running:

@@ -263,20 +263,22 @@ class PopoverSettingsPage(_SettingsPageBase):
 
         cover_size_label = LabelWSubtitle(
             title="Album cover size:",
-            subtitle="Size of the album cover",
+            subtitle="Percentage of available space",
         )
         cover_size_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
-            min=40,
-            max=500,
+            min=1,
+            max=100,
             step=1,
         )
         cover_size_scale.set_hexpand(True)
-        cover_size_scale.set_value(self.settings.get_uint("popover-album-cover-size"))
+        cover_size_scale.set_value(
+            round(self.settings.get_double("popover-album-cover-size") * 100)
+        )
         cover_size_scale.connect(
             "value-changed",
-            lambda slider: self.settings.set_uint(
-                "popover-album-cover-size", round(slider.get_value())
+            lambda slider: self.settings.set_double(
+                "popover-album-cover-size", round(slider.get_value() / 100, 2)
             ),
         )
 
