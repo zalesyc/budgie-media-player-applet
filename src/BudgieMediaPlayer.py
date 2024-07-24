@@ -33,9 +33,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.separator_text: str = self.settings.get_string("separator-text")
         self.popover_width: int = self.settings.get_uint("popover-width")
         self.popover_height: int = self.settings.get_uint("popover-height")
-        self.popover_album_cover_size: int = self.settings.get_uint(
-            "popover-album-cover-size"
-        )
 
         self.box: Gtk.Box = Gtk.Box(spacing=10)
         self.add(self.box)
@@ -270,7 +267,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         if changed_key_name == "popover-album-cover-size":
             for player in self.players_list.values():
                 player.set_popover_album_cover_size(
-                    self.settings.get_uint("popover-album-cover-size")
+                    self.settings.get_double("popover-album-cover-size")
                 )
             return
 

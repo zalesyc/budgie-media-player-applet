@@ -37,10 +37,10 @@
             <description>The height of the popover in px.</description>
             <default>400</default>
         </key>
-        <key type="u" name="popover-album-cover-size">
+        <key type="d" name="popover-album-cover-size">
             <summary>Size of the album cover in the popover</summary>
-            <description>Size of the album cover's bigger side in px.</description>
-            <default>180</default>
+            <description>Portion of the availible space, from 0 to 1.</description>
+            <default>0.9</default>
         </key>
         <key type="u" name="plasma-popover-text-style">
             <summary>Style of the name and author text in the plasma popover</summary>
