@@ -282,16 +282,6 @@ class PopoverSettingsPage(_SettingsPageBase):
             ),
         )
 
-        cover_size_note = Gtk.Label(
-            label='Note: <span weight="light">'
-            "If the selected album cover size is larger than "
-            "the popup dimensions the popup will be automatically expanded</span>",
-            use_markup=True,
-            wrap=True,
-            max_width_chars=1,
-            xalign=0.0,
-        )
-
         text_style_label = LabelWSubtitle(
             title="Popup text style:",
             subtitle="Style of the text in the popup",
@@ -438,33 +428,29 @@ class PopoverSettingsPage(_SettingsPageBase):
         self.attach(width_scale, 1, 0, 1, 1)
         self.attach(height_label, 0, 1, 1, 1)
         self.attach(height_scale, 1, 1, 1, 1)
+        self.attach(cover_size_label, 0, 2, 1, 1)
+        self.attach(cover_size_scale, 1, 2, 1, 1)
 
-        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 3, 2, 1)
 
-        self.attach(cover_size_label, 0, 3, 1, 1)
-        self.attach(cover_size_scale, 1, 3, 1, 1)
-        self.attach(cover_size_note, 0, 4, 2, 1)
+        self.attach(text_style_label, 0, 4, 1, 1)
+        self.attach(text_style_combobox, 1, 4, 1, 1)
 
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 5, 2, 1)
 
-        self.attach(text_style_label, 0, 6, 1, 1)
-        self.attach(text_style_combobox, 1, 6, 1, 1)
+        self.attach(text_size_label, 0, 6, 2, 1)
+        self.attach(name_text_size_box, 0, 7, 1, 1)
+        self.attach(name_text_size_spin, 1, 7, 1, 1)
+        self.attach(author_text_size_box, 0, 8, 1, 1)
+        self.attach(author_text_size_spin, 1, 8, 1, 1)
 
-        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 7, 2, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 9, 2, 1)
 
-        self.attach(text_size_label, 0, 8, 2, 1)
-        self.attach(name_text_size_box, 0, 9, 1, 1)
-        self.attach(name_text_size_spin, 1, 9, 1, 1)
-        self.attach(author_text_size_box, 0, 10, 1, 1)
-        self.attach(author_text_size_spin, 1, 10, 1, 1)
-
-        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 11, 2, 1)
-
-        self.attach(scrolling_speed_label, 0, 12, 2, 1)
-        self.attach(scrolling_speed_name_label, 0, 13, 1, 1)
-        self.attach(self.scrolling_speed_name_scale, 1, 13, 1, 1)
-        self.attach(scrolling_speed_author_label, 0, 14, 1, 1)
-        self.attach(self.scrolling_speed_author_scale, 1, 14, 1, 1)
+        self.attach(scrolling_speed_label, 0, 10, 2, 1)
+        self.attach(scrolling_speed_name_label, 0, 11, 1, 1)
+        self.attach(self.scrolling_speed_name_scale, 1, 11, 1, 1)
+        self.attach(scrolling_speed_author_label, 0, 12, 1, 1)
+        self.attach(self.scrolling_speed_author_scale, 1, 12, 1, 1)
 
     def text_style_combo_changed(self, combo: Gtk.ComboBox) -> None:
         value = 0
