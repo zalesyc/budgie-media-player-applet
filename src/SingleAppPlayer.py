@@ -180,9 +180,6 @@ class SingleAppPlayer(Gtk.Bin):
         if self.panel_view is not None:
             self.panel_view.set_orientation(new_orientation)
 
-    def set_popover_album_cover_size(self, new_size: int) -> None:
-        pass
-
     def popover_to_be_open(self) -> None:
         pass
 

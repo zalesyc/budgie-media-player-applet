@@ -212,13 +212,6 @@ class BudgieMediaPlayer(Budgie.Applet):
             self.popover.set_size_request(self.popover_width, self.popover_height)
             return
 
-        if changed_key_name == "popover-album-cover-size":
-            for player in self.players_list.values():
-                player.set_popover_album_cover_size(
-                    self.settings.get_double("popover-album-cover-size")
-                )
-            return
-
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
     ) -> None:
