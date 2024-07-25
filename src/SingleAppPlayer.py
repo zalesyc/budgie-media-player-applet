@@ -143,10 +143,6 @@ class SingleAppPlayer(Gtk.Bin):
 
     def add_panel_view(
         self,
-        author_max_len: int,
-        title_max_len: int,
-        separator_text: str,
-        element_order: list[str],
         orientation: Gtk.Orientation,
     ) -> None:
         self.panel_view = PanelControlView(
@@ -159,11 +155,8 @@ class SingleAppPlayer(Gtk.Bin):
             can_go_previous=self.can_go_previous,
             can_go_next=self.can_go_next,
             open_popover_func=self.open_popover_func,
-            author_max_len=author_max_len,
-            title_max_len=title_max_len,
-            separator_text=separator_text,
-            element_order=element_order,
             orientation=orientation,
+            settings=self.settings,
         )
 
         self.pinned_changed()
@@ -186,24 +179,6 @@ class SingleAppPlayer(Gtk.Bin):
     def panel_orientation_changed(self, new_orientation: Gtk.Orientation) -> None:
         if self.panel_view is not None:
             self.panel_view.set_orientation(new_orientation)
-
-    def set_author_max_len(self, new_length: int) -> None:
-        if self.panel_view is not None:
-            self.panel_view.author_max_len = new_length
-            self.panel_view.set_metadata(self.artist, self.title)
-
-    def set_title_max_len(self, new_length: int) -> None:
-        if self.panel_view is not None:
-            self.panel_view.name_max_len = new_length
-            self.panel_view.set_metadata(self.artist, self.title)
-
-    def set_separator_text(self, new_separator: str) -> None:
-        if self.panel_view is not None:
-            self.panel_view.set_separator_text(new_separator)
-
-    def set_element_order(self, new_order: list[str]) -> None:
-        if self.panel_view is not None:
-            self.panel_view.set_element_order(new_order)
 
     def set_popover_album_cover_size(self, new_size: int) -> None:
         pass

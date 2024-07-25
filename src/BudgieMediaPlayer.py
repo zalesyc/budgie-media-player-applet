@@ -88,10 +88,6 @@ class BudgieMediaPlayer(Budgie.Applet):
             )
             if len(self.players_list) < 1:
                 new_view.add_panel_view(
-                    author_max_len=self.author_max_len,
-                    title_max_len=self.name_max_len,
-                    separator_text=self.separator_text,
-                    element_order=self.element_order,
                     orientation=self.orientation,
                 )
                 self.box.pack_start(new_view.panel_view, False, False, 0)
@@ -127,10 +123,6 @@ class BudgieMediaPlayer(Budgie.Applet):
 
                 self.players_list[service_name].remove_panel_view()
                 value.add_panel_view(
-                    author_max_len=self.author_max_len,
-                    title_max_len=self.name_max_len,
-                    separator_text=self.separator_text,
-                    element_order=self.element_order,
                     orientation=self.orientation,
                 )
                 self.box.pack_start(value.panel_view, False, False, 0)
@@ -141,10 +133,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.players_list[self.panel_player_service_name].remove_panel_view()
 
         self.players_list[service_name].add_panel_view(
-            author_max_len=self.author_max_len,
-            title_max_len=self.name_max_len,
-            separator_text=self.separator_text,
-            element_order=self.element_order,
             orientation=self.orientation,
         )
         self.box.pack_start(self.players_list[service_name].panel_view, False, False, 0)
@@ -181,10 +169,6 @@ class BudgieMediaPlayer(Budgie.Applet):
             if len(self.players_list) < 1:
                 self.panel_player_service_name = new_view.service_name
                 new_view.add_panel_view(
-                    author_max_len=self.author_max_len,
-                    title_max_len=self.name_max_len,
-                    separator_text=self.separator_text,
-                    element_order=self.element_order,
                     orientation=self.orientation,
                 )
                 self.box.pack_start(new_view.panel_view, False, False, 0)
@@ -206,10 +190,6 @@ class BudgieMediaPlayer(Budgie.Applet):
             if len(self.players_list) > 0:
                 for player in self.players_list.values():
                     player.add_panel_view(
-                        author_max_len=self.author_max_len,
-                        title_max_len=self.name_max_len,
-                        separator_text=self.separator_text,
-                        element_order=self.element_order,
                         orientation=self.orientation,
                     )
                     self.box.pack_start(player.panel_view, False, False, 0)
@@ -219,38 +199,6 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.panel_player_service_name = None
 
     def settings_changed(self, _, changed_key_name: str) -> None:
-        if changed_key_name == "author-name-max-length":
-            self.author_max_len = self.settings.get_int(changed_key_name)
-            if (
-                player := self.players_list.get(self.panel_player_service_name, None)
-            ) is not None:
-                player.set_author_max_len(self.author_max_len)
-            return
-
-        if changed_key_name == "media-title-max-length":
-            self.name_max_len = self.settings.get_int(changed_key_name)
-            if (
-                player := self.players_list.get(self.panel_player_service_name, None)
-            ) is not None:
-                player.set_title_max_len(self.name_max_len)
-            return
-
-        if changed_key_name == "element-order":
-            self.element_order = self.settings.get_strv(changed_key_name)
-            if (
-                player := self.players_list.get(self.panel_player_service_name, None)
-            ) is not None:
-                player.set_element_order(self.element_order)
-            return
-
-        if changed_key_name == "separator-text":
-            self.separator_text = self.settings.get_string("separator-text")
-            if (
-                player := self.players_list.get(self.panel_player_service_name, None)
-            ) is not None:
-                player.set_separator_text(self.separator_text)
-            return
-
         if changed_key_name == "show-arrow":
             if self.settings.get_boolean("show-arrow"):
                 self.popup_icon.show()

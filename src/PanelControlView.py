@@ -10,7 +10,9 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gtk, GdkPixbuf
+gi.require_version("Pango", "1.0")
+from gi.repository import Gtk, GdkPixbuf, Gio
+from gi.repository.Pango import EllipsizeMode
 
 
 @dataclass
@@ -31,24 +33,19 @@ class PanelControlView(Gtk.Box):
         can_go_previous: bool,
         can_go_next: bool,
         open_popover_func: Callable[[], None],
-        author_max_len: int,
-        title_max_len: int,
-        separator_text: str,
-        element_order: list[str],
         orientation: Gtk.Orientation,
+        settings: Gio.Settings,
     ):
         Gtk.Box.__init__(self)
         self.dbus_player: MprisWrapper = dbus_player
         self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.open_popover_func = open_popover_func
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
-        self.author_max_len: int = author_max_len
-        self.name_max_len: int = title_max_len
-        self.separator_text: str = separator_text
-
+        self.settings: Gio.Settings = settings
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.MENU
         )
+        self.separator_text: str = ""
         self.song_name_label: Gtk.Label = Gtk.Label()
         self.song_author_label: Gtk.Label = Gtk.Label()
         self.song_separator: Gtk.Label = Gtk.Label()
@@ -69,12 +66,21 @@ class PanelControlView(Gtk.Box):
             self.set_album_cover(album_cover)
 
         # song_name
+        self.song_name_label.set_ellipsize(EllipsizeMode.END)
+        self.song_name_label.set_max_width_chars(
+            max(-1, settings.get_int("author-name-max-length"))
+        )
+        self.song_name_label.set_max_width_chars(10)
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
         song_name_event_box.connect("button-press-event", self.song_clicked)
         self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
 
         # song_author
+        self.song_author_label.set_ellipsize(EllipsizeMode.END)
+        self.song_author_label.set_max_width_chars(
+            max(-1, settings.get_int("media-title-max-length"))
+        )
         song_author_event_box = Gtk.EventBox()
         song_author_event_box.add(self.song_author_label)
         song_author_event_box.connect("button-press-event", self.song_clicked)
@@ -83,7 +89,7 @@ class PanelControlView(Gtk.Box):
         )
 
         # song_separator
-        self.song_separator.set_label(self.separator_text)
+        self.set_separator_text(settings.get_string("separator-text"))
         self.available_elements.update(
             {"song_separator": Element(self.song_separator, 4)}
         )
@@ -137,7 +143,11 @@ class PanelControlView(Gtk.Box):
             {"forward_button": Element(self.go_next_button, 0)}
         )
 
-        self.set_element_order(element_order, remove_previous=False)
+        self.settings.connect("changed", self._settings_changed)
+
+        self.set_element_order(
+            settings.get_strv("element-order"), remove_previous=False
+        )
         self.set_orientation(orientation)
         self.show_all()
 
@@ -254,7 +264,6 @@ class PanelControlView(Gtk.Box):
     def _set_song_label(
         self, author: Optional[list[str]], title: Optional[str]
     ) -> None:
-
         if title is None:
             str_title = "Unknown"
             if author is None or "".join(author).isspace() or "".join(author) == "":
@@ -275,24 +284,15 @@ class PanelControlView(Gtk.Box):
                 str_author = ", ".join(author)
                 self.set_separator_text(self.separator_text)
 
-        if self.author_max_len < 0:
-            self.song_author_label.set_label(str_author)
-        elif self.author_max_len < 3:
-            self.song_author_label.set_label("...")
-        else:
-            self.song_author_label.set_label(
-                (str_author[: self.author_max_len - 3] + "...")
-                if len(str_author) > self.author_max_len
-                else str_author
-            )
+        self.song_author_label.set_label(str_author)
+        self.song_name_label.set_label(str_title)
 
-        if self.name_max_len < 0:
-            self.song_name_label.set_label(str_title)
-        elif self.name_max_len < 3:
-            self.song_name_label.set_label("...")
-        else:
-            self.song_name_label.set_label(
-                (str_title[: self.name_max_len - 3] + "...")
-                if len(str_title) > self.name_max_len
-                else str_title
-            )
+    def _settings_changed(self, settings: Gio.Settings, key: str) -> None:
+        if key == "separator-text":
+            self.song_separator.set_label(settings.get_string(key))
+        elif key == "author-name-max-length":
+            self.song_name_label.set_max_width_chars(max(-1, settings.get_int(key)))
+        elif key == "media-title-max-length":
+            self.song_author_label.set_max_width_chars(max(-1, settings.get_int(key)))
+        elif key == "element-order":
+            self.set_element_order(settings.get_strv(key))
