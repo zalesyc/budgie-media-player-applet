@@ -19,13 +19,11 @@ class MyWindow(Gtk.Window):
         super().__init__(title="MediaPlayerTestWin")
         self.player = BudgieMediaPlayer("test")
         if len(sys.argv) > 1:
-            if sys.argv[1] == "-v":
-                self.player.do_panel_position_changed(Budgie.PanelPosition.LEFT)
-                return
             if sys.argv[1] == "-s":
                 self.add(self.player.do_get_settings_ui())
                 return
-
+            if sys.argv[1] == "-v":
+                self.player.do_panel_position_changed(Budgie.PanelPosition.LEFT)
         self.add(self.player)
 
 
