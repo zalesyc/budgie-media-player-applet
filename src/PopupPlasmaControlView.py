@@ -212,10 +212,6 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def pin_clicked(self, *_) -> None:
         self.on_pin_clicked(self.service_name)
 
-    def set_popover_album_cover_size(self, new_size: float) -> None:
-        self.album_cover_size = new_size
-        self.album_cover_changed()
-
     # overridden parent method
     def popover_to_be_open(self) -> None:
         self.popover_open = True
@@ -320,6 +316,10 @@ class PopupPlasmaControlView(SingleAppPlayer):
             )
 
     def settings_changed(self, settings: Gio.Settings, changed_key: str) -> None:
+        if changed_key == "popover-album-cover-size":
+            self.album_cover_size = self.settings.get_double("popover-album-cover-size")
+            self.album_cover_changed()
+
         if changed_key == "plasma-popover-text-style":
             style = TextStyle.insert(settings.get_uint("plasma-popover-text-style"))
             if style == self.text_style:
