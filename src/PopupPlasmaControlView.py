@@ -59,7 +59,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
         progress_bar_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
-            "action-unavailable-symbolic", Gtk.IconSize.DIALOG
+            "multimedia-player-symbolic", Gtk.IconSize.DIALOG
         )
         self.song_name_label: Union[ScrollingLabel, ElliptedLabel] = (
             ScrollingLabel() if self.text_style == TextStyle.scroll else ElliptedLabel()

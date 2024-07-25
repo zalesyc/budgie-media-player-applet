@@ -46,7 +46,7 @@ class PanelControlView(Gtk.Box):
         self.available_elements: dict[str, Element] = {}
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
-            "action-unavailable-symbolic", Gtk.IconSize.MENU
+            "multimedia-player-symbolic", Gtk.IconSize.MENU
         )
         self.song_name_label: Gtk.Label = Gtk.Label()
         self.song_author_label: Gtk.Label = Gtk.Label()
