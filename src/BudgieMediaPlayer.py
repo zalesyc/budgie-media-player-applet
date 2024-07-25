@@ -211,8 +211,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         """Return the applet settings with given uuid"""
         return SettingsPage(self.settings)
 
-    @staticmethod
-    def do_supports_settings():
+    def do_supports_settings(self):
         """Return True if support setting through Budgie Setting,
         False otherwise."""
         return True
