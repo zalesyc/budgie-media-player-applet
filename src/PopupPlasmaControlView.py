@@ -376,6 +376,7 @@ class PopupPlasmaControlView(SingleAppPlayer):
     def _on_album_cover_size_allocate(self, _, rect: Gdk.Rectangle) -> None:
         if not self._should_set_album_cover:
             return
+        self._should_set_album_cover = False
 
         self.album_cover.set_from_pixbuf(
             self._get_resized_pixbuf(rect.height, rect.width, self.album_cover_size)
