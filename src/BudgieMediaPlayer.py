@@ -14,25 +14,19 @@ from gi.repository import Gtk, Gio, GLib, Budgie
 
 
 class BudgieMediaPlayer(Budgie.Applet):
+    DBUS_NAMESPACE_NAME: str = "org.mpris.MediaPlayer2"
+
     def __init__(self, uuid: str):
         Budgie.Applet.__init__(self)
         self.uuid: str = uuid
 
-        self.default_album_cover_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
-        self.album_cover_size = self.default_album_cover_size
+        self.album_cover_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
 
         self.set_settings_prefix("/com/github/zalesyc/budgie-media-player-applet")
         self.set_settings_schema("com.github.zalesyc.budgie-media-player-applet")
         self.settings: Gio.Settings = self.get_applet_settings(self.uuid)
         self.settings.connect("changed", self.settings_changed)
-
-        self.author_max_len: int = self.settings.get_int("author-name-max-length")
-        self.name_max_len: int = self.settings.get_int("media-title-max-length")
-        self.element_order: list[str] = self.settings.get_strv("element-order")
-        self.separator_text: str = self.settings.get_string("separator-text")
-        self.popover_width: int = self.settings.get_uint("popover-width")
-        self.popover_height: int = self.settings.get_uint("popover-height")
 
         self.box: Gtk.Box = Gtk.Box(spacing=10)
         self.add(self.box)
@@ -47,12 +41,14 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.box.pack_end(self.popup_icon_event_box, False, False, 0)
 
         self.popover: Budgie.Popover = Budgie.Popover.new(self)
-        self.popover.set_size_request(self.popover_width, self.popover_height)
+        self.popover.set_size_request(
+            width=self.settings.get_uint("popover-width"),
+            height=self.settings.get_uint("popover-height"),
+        )
         self.popover.connect("closed", self.on_popover_close)
         self.popover_manager: Budgie.PopoverManager = Budgie.PopoverManager()
         self.popover_manager.register_popover(self, self.popover)
 
-        self.dbus_namespace_name: str = "org.mpris.MediaPlayer2"
         self.session_bus: Gio.DBusConnection = Gio.bus_get_sync(
             Gio.BusType.SESSION, None
         )
@@ -70,34 +66,18 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.players_list: dict[str, PopupPlasmaControlView] = {}
         # service name of the player that has the panel view
         self.panel_player_service_name: Optional[str] = None
-        self.popover_ntb: Optional[Gtk.Notebook] = None
-        self.popover_ntb = Gtk.Notebook.new()
-        self.popover_ntb.set_margin_bottom(5)
-        self.popover_ntb.set_margin_start(5)
-        self.popover_ntb.set_margin_end(5)
-        self.popover_ntb.set_show_border(False)
-        self.popover_ntb.set_scrollable(True)
+        self.popover_ntb: Gtk.Notebook = Gtk.Notebook(
+            margin_start=5,
+            margin_end=5,
+            margin_bottom=5,
+            show_border=False,
+            scrollable=True,
+        )
         self.popover.add(self.popover_ntb)
 
-        for dbus_name in dbus_names:
-            new_view = PopupPlasmaControlView(
-                service_name=dbus_name,
-                open_popover_func=self.show_popup,
-                on_pin_clicked=self.favorite_player_clicked,
-                settings=self.settings,
-            )
-            if len(self.players_list) < 1:
-                new_view.add_panel_view(
-                    orientation=self.orientation,
-                )
-                self.box.pack_start(new_view.panel_view, False, False, 0)
-                self.panel_player_service_name = new_view.service_name
+        for dbus_service_name in dbus_names:
+            self._add_popup_plasma_control_view(dbus_service_name)
 
-            self.popover_ntb.append_page(new_view, new_view.icon)
-
-            self.players_list.update({new_view.service_name: new_view})
-
-        self.popover.get_child().show_all()
         self.show_all()
 
         if not self.settings.get_boolean("show-arrow"):
@@ -122,21 +102,13 @@ class BudgieMediaPlayer(Budgie.Applet):
                     continue
 
                 self.players_list[service_name].remove_panel_view()
-                value.add_panel_view(
-                    orientation=self.orientation,
-                )
-                self.box.pack_start(value.panel_view, False, False, 0)
-                self.panel_player_service_name = value.service_name
+                self._add_panel_view(value)
                 return
             return
 
         self.players_list[self.panel_player_service_name].remove_panel_view()
 
-        self.players_list[service_name].add_panel_view(
-            orientation=self.orientation,
-        )
-        self.box.pack_start(self.players_list[service_name].panel_view, False, False, 0)
-        self.panel_player_service_name = service_name
+        self._add_panel_view(self.players_list[service_name])
 
     def list_dbus_players(self) -> list[str]:
         names = self.session_bus.call_sync(
@@ -150,30 +122,13 @@ class BudgieMediaPlayer(Budgie.Applet):
             -1,  # Timeout (default)
             None,  # Cancellable (none)
         )
-        return [x for x in names[0] if x.startswith(self.dbus_namespace_name)]
+        return [x for x in names[0] if x.startswith(self.DBUS_NAMESPACE_NAME)]
 
     def dbus_players_changed(
         self, _, __, ___, ____, _____, changes: GLib.Variant
     ) -> None:
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
-            new_view = PopupPlasmaControlView(
-                service_name=changes[0],
-                open_popover_func=self.show_popup,
-                on_pin_clicked=self.favorite_player_clicked,
-                settings=self.settings,
-            )
-
-            self.popover_ntb.append_page(new_view, new_view.icon)
-            self.popover_ntb.show_all()
-
-            if len(self.players_list) < 1:
-                self.panel_player_service_name = new_view.service_name
-                new_view.add_panel_view(
-                    orientation=self.orientation,
-                )
-                self.box.pack_start(new_view.panel_view, False, False, 0)
-
-            self.players_list.update({new_view.service_name: new_view})
+            self._add_popup_plasma_control_view(changes[0])
 
         elif not changes[2]:  # player was removed
             player_to_get_del = self.players_list.pop(changes[0], None)
@@ -189,11 +144,7 @@ class BudgieMediaPlayer(Budgie.Applet):
 
             if len(self.players_list) > 0:
                 for player in self.players_list.values():
-                    player.add_panel_view(
-                        orientation=self.orientation,
-                    )
-                    self.box.pack_start(player.panel_view, False, False, 0)
-                    self.panel_player_service_name = player.service_name
+                    self._add_panel_view(player)
                     break
             else:
                 self.panel_player_service_name = None
@@ -207,10 +158,34 @@ class BudgieMediaPlayer(Budgie.Applet):
             return
 
         if changed_key_name in {"popover-width", "popover-height"}:
-            self.popover_width = self.settings.get_uint("popover-width")
-            self.popover_height = self.settings.get_uint("popover-height")
-            self.popover.set_size_request(self.popover_width, self.popover_height)
+            self.popover.set_size_request(
+                width=self.settings.get_uint("popover-width"),
+                height=self.settings.get_uint("popover-height"),
+            )
             return
+
+    def _add_panel_view(self, player: PopupPlasmaControlView) -> None:
+        player.add_panel_view(
+            orientation=self.orientation,
+        )
+        self.box.pack_start(player.panel_view, False, False, 0)
+        self.panel_player_service_name = player.service_name
+
+    def _add_popup_plasma_control_view(self, service_name: str) -> None:
+        new_view = PopupPlasmaControlView(
+            service_name=service_name,
+            open_popover_func=self.show_popup,
+            on_pin_clicked=self.favorite_player_clicked,
+            settings=self.settings,
+        )
+
+        self.popover_ntb.append_page(new_view, new_view.icon)
+        self.popover_ntb.show_all()
+
+        if len(self.players_list) < 1:
+            self._add_panel_view(new_view)
+
+        self.players_list.update({new_view.service_name: new_view})
 
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
@@ -236,7 +211,8 @@ class BudgieMediaPlayer(Budgie.Applet):
         """Return the applet settings with given uuid"""
         return SettingsPage(self.settings)
 
-    def do_supports_settings(self):
+    @staticmethod
+    def do_supports_settings():
         """Return True if support setting through Budgie Setting,
         False otherwise."""
         return True
