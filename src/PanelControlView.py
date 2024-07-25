@@ -42,10 +42,12 @@ class PanelControlView(Gtk.Box):
         self.open_popover_func = open_popover_func
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
         self.settings: Gio.Settings = settings
+        self.separator_text: str = ""
+        self.available_elements: dict[str, Element] = {}
+
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "action-unavailable-symbolic", Gtk.IconSize.MENU
         )
-        self.separator_text: str = ""
         self.song_name_label: Gtk.Label = Gtk.Label()
         self.song_author_label: Gtk.Label = Gtk.Label()
         self.song_separator: Gtk.Label = Gtk.Label()
@@ -53,12 +55,10 @@ class PanelControlView(Gtk.Box):
         self.go_previous_button: Gtk.Button = Gtk.Button()
         self.go_next_button: Gtk.Button = Gtk.Button()
 
-        self.available_elements: dict[str, Element] = {}
-
         # albumCover
         album_cover_event_box = Gtk.EventBox()
         album_cover_event_box.add(self.album_cover)
-        album_cover_event_box.connect("button-press-event", self.song_clicked)
+        album_cover_event_box.connect("button-press-event", self._song_clicked)
         self.available_elements.update(
             {"album_cover": Element(album_cover_event_box, 5)}
         )
@@ -73,7 +73,7 @@ class PanelControlView(Gtk.Box):
         self.song_name_label.set_max_width_chars(10)
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
-        song_name_event_box.connect("button-press-event", self.song_clicked)
+        song_name_event_box.connect("button-press-event", self._song_clicked)
         self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
 
         # song_author
@@ -83,13 +83,13 @@ class PanelControlView(Gtk.Box):
         )
         song_author_event_box = Gtk.EventBox()
         song_author_event_box.add(self.song_author_label)
-        song_author_event_box.connect("button-press-event", self.song_clicked)
+        song_author_event_box.connect("button-press-event", self._song_clicked)
         self.available_elements.update(
             {"song_author": Element(song_author_event_box, 4)}
         )
 
         # song_separator
-        self.set_separator_text(settings.get_string("separator-text"))
+        self._set_separator_text(settings.get_string("separator-text"))
         self.available_elements.update(
             {"song_separator": Element(self.song_separator, 4)}
         )
@@ -109,7 +109,7 @@ class PanelControlView(Gtk.Box):
         )
         self.play_pause_button.set_relief(Gtk.ReliefStyle.NONE)
         self.play_pause_button.set_sensitive(can_play_or_pause)
-        self.play_pause_button.connect("button-press-event", self.play_paused_clicked)
+        self.play_pause_button.connect("button-press-event", self._play_paused_clicked)
         self.play_pause_button.set_tooltip_text("Play / Pause")
         self.available_elements.update(
             {"play_pause_button": Element(self.play_pause_button, 0)}
@@ -123,7 +123,7 @@ class PanelControlView(Gtk.Box):
         )
         self.go_previous_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_previous_button.set_sensitive(can_go_previous)
-        self.go_previous_button.connect("button-press-event", self.backward_clicked)
+        self.go_previous_button.connect("button-press-event", self._backward_clicked)
         self.go_previous_button.set_tooltip_text("Go to the previous song / media")
         self.available_elements.update(
             {"backward_button": Element(self.go_previous_button, 0)}
@@ -137,7 +137,7 @@ class PanelControlView(Gtk.Box):
         )
         self.go_next_button.set_relief(Gtk.ReliefStyle.NONE)
         self.go_next_button.set_sensitive(can_go_next)
-        self.go_next_button.connect("button-press-event", self.forward_clicked)
+        self.go_next_button.connect("button-press-event", self._forward_clicked)
         self.go_next_button.set_tooltip_text("Go to the next song / media")
         self.available_elements.update(
             {"forward_button": Element(self.go_next_button, 0)}
@@ -145,7 +145,7 @@ class PanelControlView(Gtk.Box):
 
         self.settings.connect("changed", self._settings_changed)
 
-        self.set_element_order(
+        self._set_element_order(
             settings.get_strv("element-order"), remove_previous=False
         )
         self.set_orientation(orientation)
@@ -160,47 +160,12 @@ class PanelControlView(Gtk.Box):
         self.song_separator.set_angle(angle)
         super().set_orientation(new_orientation)
 
-    def set_separator_text(self, new_text: str, override_set_text: bool = True) -> None:
-        if override_set_text:
-            self.separator_text = new_text
-        self.song_separator.set_label(new_text)
-
-    def set_element_order(self, order: list[str], remove_previous: bool = True) -> None:
-        if remove_previous:
-            self.foreach(self.remove)
-
-        for element_name in order:
-            element = self.available_elements.get(element_name)
-            if element is None:
-                print(
-                    f"budgie-media-player-applet: '{element_name}' "
-                    "not in available elements - probably wrong settings -> skipping"
-                )
-                continue
-            self.pack_start(element.widget, False, False, element.spacing)
-
-        self.show_all()
-
-    # overridden parent method
     def panel_size_changed(
         self, new_size: int, album_cover_data: AlbumCoverData
     ) -> None:
         self.album_cover_size = new_size
         self.set_album_cover(album_cover_data)
 
-    def play_paused_clicked(self, *_) -> None:
-        self.dbus_player.call_player_method("PlayPause")
-
-    def forward_clicked(self, *_) -> None:
-        self.dbus_player.call_player_method("Next")
-
-    def backward_clicked(self, *_) -> None:
-        self.dbus_player.call_player_method("Previous")
-
-    def song_clicked(self, *_) -> None:
-        self.open_popover_func()
-
-    # overridden parent method
     def set_playing(self, playing: bool) -> None:
         self.play_pause_button.set_image(
             Gtk.Image.new_from_icon_name(
@@ -219,15 +184,12 @@ class PanelControlView(Gtk.Box):
     def set_can_play_or_pause(self, can_play_or_pause: bool) -> None:
         self.play_pause_button.set_sensitive(can_play_or_pause)
 
-    # overridden parent method
     def set_can_go_previous(self, can_go_previous: bool) -> None:
         self.go_previous_button.set_sensitive(can_go_previous)
 
-    # overridden parent method
     def set_can_go_next(self, can_go_next: bool) -> None:
         self.go_next_button.set_sensitive(can_go_next)
 
-    # overridden parent method
     def set_album_cover(self, data: AlbumCoverData) -> None:
         if data.cover_type == AlbumCoverType.Pixbuf:
             if self.orientation == Gtk.Orientation.HORIZONTAL:
@@ -261,6 +223,43 @@ class PanelControlView(Gtk.Box):
                 min(Gtk.IconSize.lookup(Gtk.IconSize.DND)[2], self.album_cover_size),
             )
 
+    def _play_paused_clicked(self, *_) -> None:
+        self.dbus_player.call_player_method("PlayPause")
+
+    def _forward_clicked(self, *_) -> None:
+        self.dbus_player.call_player_method("Next")
+
+    def _backward_clicked(self, *_) -> None:
+        self.dbus_player.call_player_method("Previous")
+
+    def _song_clicked(self, *_) -> None:
+        self.open_popover_func()
+
+    def _set_separator_text(
+        self, new_text: str, override_set_text: bool = True
+    ) -> None:
+        if override_set_text:
+            self.separator_text = new_text
+        self.song_separator.set_label(new_text)
+
+    def _set_element_order(
+        self, order: list[str], remove_previous: bool = True
+    ) -> None:
+        if remove_previous:
+            self.foreach(self.remove)
+
+        for element_name in order:
+            element = self.available_elements.get(element_name)
+            if element is None:
+                print(
+                    f"budgie-media-player-applet: '{element_name}' "
+                    "not in available elements - probably wrong settings -> skipping"
+                )
+                continue
+            self.pack_start(element.widget, False, False, element.spacing)
+
+        self.show_all()
+
     def _set_song_label(
         self, author: Optional[list[str]], title: Optional[str]
     ) -> None:
@@ -268,21 +267,21 @@ class PanelControlView(Gtk.Box):
             str_title = "Unknown"
             if author is None or "".join(author).isspace() or "".join(author) == "":
                 str_author = ""
-                self.set_separator_text("", override_set_text=False)
+                self._set_separator_text("", override_set_text=False)
 
             else:
                 str_author = ", ".join(author)
-                self.set_separator_text(self.separator_text)
+                self._set_separator_text(self.separator_text)
 
         else:
             str_title = title
             if author is None or "".join(author).isspace() or "".join(author) == "":
                 str_author = ""
-                self.set_separator_text("", override_set_text=False)
+                self._set_separator_text("", override_set_text=False)
 
             else:
                 str_author = ", ".join(author)
-                self.set_separator_text(self.separator_text)
+                self._set_separator_text(self.separator_text)
 
         self.song_author_label.set_label(str_author)
         self.song_name_label.set_label(str_title)
@@ -295,4 +294,4 @@ class PanelControlView(Gtk.Box):
         elif key == "media-title-max-length":
             self.song_author_label.set_max_width_chars(max(-1, settings.get_int(key)))
         elif key == "element-order":
-            self.set_element_order(settings.get_strv(key))
+            self._set_element_order(settings.get_strv(key))
