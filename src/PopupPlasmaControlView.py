@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from SingleAppPlayer import SingleAppPlayer
-from AlbumCoverData import AlbumCoverType
+from EnumsStructs import AlbumCoverType
 from Labels import ScrollingLabel, ElliptedLabel
 from typing import Callable, Optional, Union
 from enum import IntEnum

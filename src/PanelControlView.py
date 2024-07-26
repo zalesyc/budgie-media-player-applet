@@ -1,7 +1,7 @@
 # Copyright 2024, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from AlbumCoverData import AlbumCoverType, AlbumCoverData
+from EnumsStructs import AlbumCoverType, AlbumCoverData, PanelLengthType
 from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
@@ -70,7 +70,6 @@ class PanelControlView(Gtk.Box):
         self.song_name_label.set_max_width_chars(
             max(-1, settings.get_int("author-name-max-length"))
         )
-        self.song_name_label.set_max_width_chars(10)
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
         song_name_event_box.connect("button-press-event", self._song_clicked)
@@ -289,9 +288,24 @@ class PanelControlView(Gtk.Box):
     def _settings_changed(self, settings: Gio.Settings, key: str) -> None:
         if key == "separator-text":
             self.song_separator.set_label(settings.get_string(key))
-        elif key == "author-name-max-length":
-            self.song_name_label.set_max_width_chars(max(-1, settings.get_int(key)))
-        elif key == "media-title-max-length":
-            self.song_author_label.set_max_width_chars(max(-1, settings.get_int(key)))
         elif key == "element-order":
             self._set_element_order(settings.get_strv(key))
+        elif key in {
+            "panel-length-type",
+            "media-title-max-length",
+            "author-name-max-length",
+        }:
+            if settings.get_uint("panel-length-type") == PanelLengthType.Variable:
+                self.song_name_label.set_ellipsize(EllipsizeMode.END)
+                self.song_author_label.set_ellipsize(EllipsizeMode.END)
+                self.song_name_label.set_max_width_chars(
+                    max(-1, settings.get_int("media-title-max-length"))
+                )
+                self.song_author_label.set_max_width_chars(
+                    max(-1, settings.get_int("author-name-max-length"))
+                )
+            else:
+                self.song_name_label.set_max_width_chars(-1)
+                self.song_author_label.set_max_width_chars(-1)
+                self.song_name_label.set_ellipsize(EllipsizeMode.NONE)
+                self.song_author_label.set_ellipsize(EllipsizeMode.NONE)

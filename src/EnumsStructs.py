@@ -10,6 +10,12 @@ gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gio, GdkPixbuf
 
+"""
+This file is for enums and dataclasses (structs) 
+that are accessed from multiple files and having 
+them there would result in circular dependencies
+"""
+
 
 class AlbumCoverType(IntEnum):
     Null = 0
@@ -24,3 +30,10 @@ class AlbumCoverData:
     image_url_http: Optional[str]
     song_cover_pixbuf: Optional[GdkPixbuf.Pixbuf]
     song_cover_other: Union[Gio.Icon, str, None]
+
+
+# TODO: come up with better names
+class PanelLengthType(IntEnum):
+    NoLimit = 0
+    Variable = 1
+    Fixed = 2

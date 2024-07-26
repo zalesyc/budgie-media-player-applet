@@ -5,6 +5,7 @@ from typing import Optional
 import gi
 from SettingsPage import SettingsPage
 from PopupPlasmaControlView import PopupPlasmaControlView
+from EnumsStructs import PanelLengthType
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
@@ -29,6 +30,9 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.settings.connect("changed", self.settings_changed)
 
         self.box: Gtk.Box = Gtk.Box(spacing=10)
+        if self.settings.get_uint("panel-length-type") == PanelLengthType.Fixed:
+            # TODO: this code is also repeated at line 233 -> possibly make a func
+            self._set_box_size_request()
         self.add(self.box)
 
         self.popup_icon: Gtk.Image = Gtk.Image.new_from_icon_name(
@@ -164,6 +168,25 @@ class BudgieMediaPlayer(Budgie.Applet):
             )
             return
 
+        if changed_key_name in {"panel-length-type", "panel-max-length"}:
+            if self.settings.get_uint("panel-length-type") == PanelLengthType.Fixed:
+                self._set_box_size_request()
+            else:
+                self.box.set_size_request(-1, -1)
+            return
+
+    def _set_box_size_request(self) -> None:
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
+            self.box.set_size_request(
+                width=self.settings.get_uint("panel-max-length"),
+                height=-1,
+            )
+        else:
+            self.box.set_size_request(
+                width=-1,
+                height=self.settings.get_uint("panel-max-length"),
+            )
+
     def _add_panel_view(self, player: PopupPlasmaControlView) -> None:
         player.add_panel_view(
             orientation=self.orientation,
@@ -206,6 +229,10 @@ class BudgieMediaPlayer(Budgie.Applet):
             player := self.players_list.get(self.panel_player_service_name, None)
         ) is not None:
             player.panel_orientation_changed(self.orientation)
+
+        if self.settings.get_uint("panel-length-type") == PanelLengthType.Fixed:
+            # TODO: it's repeated here
+            self._set_box_size_request()
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""

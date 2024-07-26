@@ -4,7 +4,7 @@ install_data(
     'PanelControlView.py',
     'BudgieMediaPlayer.py',
     'PopupPlasmaControlView.py',
-    'AlbumCoverData.py',
+    'EnumsStructs.py',
     'mprisWrapper.py',
     'SettingsPage.py',
     'Labels.py',
