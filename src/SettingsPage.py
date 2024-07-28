@@ -8,6 +8,7 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gtk, Gio
 
 from Labels import LabelWSubtitle
+from EnumsStructs import PanelLengthType
 from math import ceil
 from typing import Union
 
@@ -89,81 +90,178 @@ class PanelSettingsPage(_SettingsPageBase):
             },
             hexpand=True,
         )
-
+        max_len_type: PanelLengthType = PanelLengthType(
+            settings.get_uint("panel-length-type")
+        )
         max_len_title = LabelWSubtitle(
-            title="Maximum length of:",
-            subtitle="Maximum length, in characters, if disabled size will be unlimited",
+            title="Length:",
+            subtitle="Length of the applet in the panel, there are multiple modes",
             halign=Gtk.Align.START,
         )
 
-        max_len_name_box = Gtk.Box(
+        max_len_no_limit_radio = Gtk.RadioButton(
+            active=max_len_type == PanelLengthType.NoLimit,
+        )
+        max_len_no_limit_radio.connect(
+            "toggled",
+            self._no_limit_len_radio_toggled,
+        )
+        max_len_no_limit_label = LabelWSubtitle(
+            title="No limit",
+            subtitle="The applet may grow into huge sizes, not recommended",
+        )
+        max_len_no_limit_box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+        max_len_no_limit_box.pack_start(max_len_no_limit_radio, False, False, 15)
+        max_len_no_limit_box.pack_start(max_len_no_limit_label, False, False, 0)
+
+        max_len_fixed_radio = Gtk.RadioButton(
+            group=max_len_no_limit_radio,
+            active=max_len_type == PanelLengthType.Fixed,
+        )
+        max_len_fixed_label = LabelWSubtitle(
+            title="Fixed",
+            subtitle="The applet will always have the same length",
+        )
+        max_len_fixed_box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+        max_len_fixed_box.pack_start(max_len_fixed_radio, False, False, 15)
+        max_len_fixed_box.pack_start(max_len_fixed_label, False, False, 0)
+        max_len_fixed_value_label = Gtk.Label(
+            label="Length:",
+            halign=Gtk.Align.START,
+            margin_left=30,
+        )
+        max_len_fixed_value_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, 10, 1000, 1
+        )
+        max_len_fixed_value_scale.set_sensitive(max_len_type == PanelLengthType.Fixed)
+        max_len_fixed_value_scale.set_value_pos(Gtk.PositionType.LEFT)
+        max_len_fixed_value_scale.set_value(self.settings.get_uint("panel-max-length"))
+        max_len_fixed_value_scale.connect(
+            "value-changed",
+            lambda scale: self.settings.set_uint(
+                "panel-max-length", round(scale.get_value())
+            ),
+        )
+        max_len_fixed_radio.connect(
+            "toggled",
+            self._fixed_len_radio_toggled,
+            {max_len_fixed_value_scale},
+        )
+
+        max_len_variable_radio = Gtk.RadioButton(
+            group=max_len_no_limit_radio,
+            active=max_len_type == PanelLengthType.Variable,
+        )
+        max_len_variable_label = LabelWSubtitle(
+            title="Maximal Length",
+            subtitle="The applet will try to grow until it reaches the set maximum "
+            "length, the length is set individually for the title and author, "
+            "if disabled there is no limit.",
+            wrap_subtitle=True,
+        )
+        max_len_variable_box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+        max_len_variable_box.pack_start(max_len_variable_radio, False, False, 15)
+        max_len_variable_box.pack_start(max_len_variable_label, True, True, 0)
+
+        max_len_variable_value_name_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             hexpand=False,
-            margin_left=10,
+            margin_left=15,
         )
-        max_len_name_label = Gtk.Label(
+        max_len_variable_value_name_label = Gtk.Label(
             label="Name:",
             halign=Gtk.Align.START,
         )
-        max_len_name_value = self.settings.get_int("media-title-max-length")
-        max_len_name_check = Gtk.CheckButton(active=max_len_name_value >= 0)
-        max_len_name_spin = Gtk.SpinButton.new_with_range(
+        max_len_variable_value_name = self.settings.get_int("media-title-max-length")
+        self.max_len_variable_value_name_check = Gtk.CheckButton(
+            active=max_len_variable_value_name >= 0,
+            sensitive=max_len_type == PanelLengthType.Variable,
+        )
+        self.max_len_variable_value_name_spin = Gtk.SpinButton.new_with_range(
             min=5,
             max=100,
             step=1,
         )
-        max_len_name_spin.set_value(max(abs(max_len_name_value), 5))
-        max_len_name_box.pack_start(max_len_name_check, False, False, 15)
-        max_len_name_box.pack_start(max_len_name_label, False, False, 0)
-        max_len_name_check.connect(
+        self.max_len_variable_value_name_spin.set_value(
+            max(abs(max_len_variable_value_name), 5)
+        )
+        self.max_len_variable_value_name_spin.set_sensitive(
+            max_len_variable_value_name >= 0
+            and max_len_type == PanelLengthType.Variable
+        )
+        max_len_variable_value_name_box.pack_start(
+            self.max_len_variable_value_name_check, False, False, 15
+        )
+        max_len_variable_value_name_box.pack_start(
+            max_len_variable_value_name_label, False, False, 0
+        )
+        self.max_len_variable_value_name_check.connect(
             "toggled",
             lambda check: self._enabled_spin_check_changed(
                 check,
-                max_len_name_spin,
+                self.max_len_variable_value_name_spin,
                 "media-title-max-length",
                 min_value=5,
             ),
         )
-        max_len_name_spin.connect(
+        self.max_len_variable_value_name_spin.connect(
             "value-changed",
             lambda spin: self.settings.set_int(
                 "media-title-max-length", spin.get_value_as_int()
             ),
         )
 
-        max_len_author_box = Gtk.Box(
+        max_len_variable_value_author_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             hexpand=False,
-            margin_left=10,
+            margin_left=15,
         )
-        max_len_author_label = Gtk.Label(
+        max_len_variable_value_author_label = Gtk.Label(
             label="Author:",
             halign=Gtk.Align.START,
         )
-        max_len_author_value = self.settings.get_int("author-name-max-length")
-        max_len_author_check = Gtk.CheckButton(active=max_len_author_value >= 0)
-        max_len_author_spin = Gtk.SpinButton.new_with_range(
+        max_len_variable_value_author = self.settings.get_int("author-name-max-length")
+        self.max_len_variable_value_author_check = Gtk.CheckButton(
+            active=max_len_variable_value_author >= 0,
+            sensitive=max_len_type == PanelLengthType.Variable,
+        )
+        self.max_len_variable_value_author_spin = Gtk.SpinButton.new_with_range(
             min=5,
             max=100,
             step=1,
         )
-        max_len_author_box.pack_start(max_len_author_check, False, False, 15)
-        max_len_author_box.pack_start(max_len_author_label, False, False, 0)
-        max_len_author_spin.set_value(max(abs(max_len_author_value), 5))
-        max_len_author_check.connect(
+        max_len_variable_value_author_box.pack_start(
+            self.max_len_variable_value_author_check, False, False, 15
+        )
+        max_len_variable_value_author_box.pack_start(
+            max_len_variable_value_author_label, False, False, 0
+        )
+        self.max_len_variable_value_author_spin.set_value(
+            max(abs(max_len_variable_value_author), 5)
+        )
+        self.max_len_variable_value_author_spin.set_sensitive(
+            max_len_variable_value_author >= 0
+            and max_len_type == PanelLengthType.Variable
+        )
+        self.max_len_variable_value_author_check.connect(
             "toggled",
             lambda check: self._enabled_spin_check_changed(
                 check,
-                max_len_author_spin,
+                self.max_len_variable_value_author_spin,
                 "author-name-max-length",
                 min_value=5,
             ),
         )
-        max_len_author_spin.connect(
+        self.max_len_variable_value_author_spin.connect(
             "value-changed",
             lambda spin: self.settings.set_int(
                 "author-name-max-length", spin.get_value_as_int()
             ),
+        )
+
+        max_len_variable_radio.connect(
+            "toggled",
+            self._variable_len_radio_toggled,
         )
 
         separator_label = LabelWSubtitle(
@@ -202,21 +300,63 @@ class PanelSettingsPage(_SettingsPageBase):
         self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 2, 2, 1)
 
         self.attach(max_len_title, 0, 3, 2, 1)
-        self.attach(max_len_name_box, 0, 4, 1, 1)
-        self.attach(max_len_name_spin, 1, 4, 1, 1)
-        self.attach(max_len_author_box, 0, 5, 1, 1)
-        self.attach(max_len_author_spin, 1, 5, 1, 1)
+        self.attach(max_len_no_limit_box, 0, 4, 2, 1)
+        self.attach(max_len_fixed_box, 0, 5, 2, 1)
+        self.attach(max_len_fixed_value_label, 0, 6, 1, 1)
+        self.attach(max_len_fixed_value_scale, 1, 6, 1, 1)
+        self.attach(max_len_variable_box, 0, 7, 2, 1)
+        self.attach(max_len_variable_value_name_box, 0, 8, 1, 1)
+        self.attach(self.max_len_variable_value_name_spin, 1, 8, 1, 1)
+        self.attach(max_len_variable_value_author_box, 0, 9, 1, 1)
+        self.attach(self.max_len_variable_value_author_spin, 1, 9, 1, 1)
 
-        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 6, 2, 1)
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 10, 2, 1)
 
-        self.attach(separator_label, 0, 7, 1, 1)
-        self.attach(separator_combo, 1, 7, 1, 1)
-        self.attach(show_arrow_label, 0, 8, 1, 1)
-        self.attach(show_arrow_switch, 1, 8, 1, 1)
+        self.attach(separator_label, 0, 11, 1, 1)
+        self.attach(separator_combo, 1, 11, 1, 1)
+        self.attach(show_arrow_label, 0, 12, 1, 1)
+        self.attach(show_arrow_switch, 1, 12, 1, 1)
 
     def show_arrow_changed(self, _, new_state: bool) -> bool:
         self.settings.set_boolean("show-arrow", new_state)
         return False
+
+    def _no_limit_len_radio_toggled(
+        self,
+        radio: Gtk.ToggleButton,
+    ):
+        if radio.get_active():
+            self.settings.set_uint("panel-length-type", PanelLengthType.NoLimit)
+
+    def _fixed_len_radio_toggled(
+        self,
+        radio: Gtk.ToggleButton,
+        widgets_enabled_by_this: frozenset[Gtk.Widget],
+    ):
+        active = radio.get_active()
+        for widget in widgets_enabled_by_this:
+            widget.set_sensitive(active)
+
+        if active:
+            self.settings.set_uint("panel-length-type", PanelLengthType.Fixed)
+
+    def _variable_len_radio_toggled(
+        self,
+        radio: Gtk.ToggleButton,
+    ):
+        active = radio.get_active()
+
+        self.max_len_variable_value_author_check.set_sensitive(active)
+        self.max_len_variable_value_name_check.set_sensitive(active)
+
+        if self.settings.get_int("media-title-max-length") >= 0:
+            self.max_len_variable_value_name_spin.set_sensitive(active)
+
+        if self.settings.get_int("author-name-max-length") >= 0:
+            self.max_len_variable_value_author_spin.set_sensitive(active)
+
+        if active:
+            self.settings.set_uint("panel-length-type", PanelLengthType.Variable)
 
 
 class PopoverSettingsPage(_SettingsPageBase):

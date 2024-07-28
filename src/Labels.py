@@ -239,9 +239,10 @@ class ElliptedLabel(Gtk.Label):
 class LabelWSubtitle(Gtk.Box):
     """
     A label with a title and a subtitle.
+    For wrap_subtitle the label has to be set to fill its parent layout
     """
 
-    def __init__(self, title: str, subtitle: str, **kwargs):
+    def __init__(self, title: str, subtitle: str, wrap_subtitle=False, **kwargs):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, **kwargs)
         title_label = Gtk.Label(
             label=title,
@@ -251,7 +252,10 @@ class LabelWSubtitle(Gtk.Box):
         subtitle_label = Gtk.Label(
             label=f'<span size="smaller" weight="light">{markup_escape_text(subtitle)}</span>',
             use_markup=True,
-            halign=Gtk.Align.START,
+            halign=Gtk.Align.FILL if wrap_subtitle else Gtk.Align.START,
+            max_width_chars=1 if wrap_subtitle else -1,
+            wrap=wrap_subtitle,
+            xalign=0.0,
         )
         self.pack_start(title_label, False, True, 0)
         self.pack_start(subtitle_label, False, True, 0)
