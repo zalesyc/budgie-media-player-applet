@@ -1,7 +1,7 @@
 # Copyright 2024, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from EnumsStructs import AlbumCoverType, AlbumCoverData, PanelLengthType
+from EnumsStructs import AlbumCoverType, AlbumCoverData, PanelLengthMode
 from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
@@ -18,7 +18,8 @@ from gi.repository.Pango import EllipsizeMode
 @dataclass
 class Element:
     widget: Gtk.Widget
-    spacing: int
+    spacing: int = 0
+    expand: bool = False
 
 
 class PanelControlView(Gtk.Box):
@@ -66,25 +67,21 @@ class PanelControlView(Gtk.Box):
             self.set_album_cover(album_cover)
 
         # song_name
-        self.song_name_label.set_ellipsize(EllipsizeMode.END)
-        self.song_name_label.set_max_width_chars(
-            max(-1, settings.get_int("author-name-max-length"))
-        )
+        self.song_name_label.set_xalign(0.0)
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
         song_name_event_box.connect("button-press-event", self._song_clicked)
-        self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
+        self.available_elements.update(
+            {"song_name": Element(song_name_event_box, 4, expand=True)}
+        )
 
         # song_author
-        self.song_author_label.set_ellipsize(EllipsizeMode.END)
-        self.song_author_label.set_max_width_chars(
-            max(-1, settings.get_int("media-title-max-length"))
-        )
+        self.song_name_label.set_xalign(0.0)
         song_author_event_box = Gtk.EventBox()
         song_author_event_box.add(self.song_author_label)
         song_author_event_box.connect("button-press-event", self._song_clicked)
         self.available_elements.update(
-            {"song_author": Element(song_author_event_box, 4)}
+            {"song_author": Element(song_author_event_box, 4, expand=True)}
         )
 
         # song_separator
@@ -111,7 +108,7 @@ class PanelControlView(Gtk.Box):
         self.play_pause_button.connect("button-press-event", self._play_paused_clicked)
         self.play_pause_button.set_tooltip_text("Play / Pause")
         self.available_elements.update(
-            {"play_pause_button": Element(self.play_pause_button, 0)}
+            {"play_pause_button": Element(self.play_pause_button)}
         )
 
         # backward_button
@@ -125,7 +122,7 @@ class PanelControlView(Gtk.Box):
         self.go_previous_button.connect("button-press-event", self._backward_clicked)
         self.go_previous_button.set_tooltip_text("Go to the previous song / media")
         self.available_elements.update(
-            {"backward_button": Element(self.go_previous_button, 0)}
+            {"backward_button": Element(self.go_previous_button)}
         )
 
         # forward_button
@@ -138,12 +135,11 @@ class PanelControlView(Gtk.Box):
         self.go_next_button.set_sensitive(can_go_next)
         self.go_next_button.connect("button-press-event", self._forward_clicked)
         self.go_next_button.set_tooltip_text("Go to the next song / media")
-        self.available_elements.update(
-            {"forward_button": Element(self.go_next_button, 0)}
-        )
+        self.available_elements.update({"forward_button": Element(self.go_next_button)})
 
         self.settings.connect("changed", self._settings_changed)
 
+        self._set_length()
         self._set_element_order(
             settings.get_strv("element-order"), remove_previous=False
         )
@@ -255,7 +251,9 @@ class PanelControlView(Gtk.Box):
                     "not in available elements - probably wrong settings -> skipping"
                 )
                 continue
-            self.pack_start(element.widget, False, False, element.spacing)
+            self.pack_start(
+                element.widget, element.expand, element.expand, element.spacing
+            )
 
         self.show_all()
 
@@ -291,21 +289,31 @@ class PanelControlView(Gtk.Box):
         elif key == "element-order":
             self._set_element_order(settings.get_strv(key))
         elif key in {
-            "panel-length-type",
+            "panel-length-mode",
             "media-title-max-length",
             "author-name-max-length",
         }:
-            if settings.get_uint("panel-length-type") == PanelLengthType.Variable:
-                self.song_name_label.set_ellipsize(EllipsizeMode.END)
-                self.song_author_label.set_ellipsize(EllipsizeMode.END)
-                self.song_name_label.set_max_width_chars(
-                    max(-1, settings.get_int("media-title-max-length"))
-                )
-                self.song_author_label.set_max_width_chars(
-                    max(-1, settings.get_int("author-name-max-length"))
-                )
-            else:
-                self.song_name_label.set_max_width_chars(-1)
-                self.song_author_label.set_max_width_chars(-1)
-                self.song_name_label.set_ellipsize(EllipsizeMode.NONE)
-                self.song_author_label.set_ellipsize(EllipsizeMode.NONE)
+            self._set_length()
+
+    def _set_length(self) -> None:
+        panel_len_mode = self.settings.get_uint("panel-length-mode")
+        if panel_len_mode in {PanelLengthMode.Variable, PanelLengthMode.Fixed}:
+            self.song_name_label.set_ellipsize(EllipsizeMode.END)
+            self.song_author_label.set_ellipsize(EllipsizeMode.END)
+        else:
+            self.song_name_label.set_ellipsize(EllipsizeMode.NONE)
+            self.song_author_label.set_ellipsize(EllipsizeMode.NONE)
+
+        if panel_len_mode == PanelLengthMode.Variable:
+            self.song_name_label.set_max_width_chars(
+                max(-1, self.settings.get_int("media-title-max-length"))
+            )
+            self.song_author_label.set_max_width_chars(
+                max(-1, self.settings.get_int("author-name-max-length"))
+            )
+        elif panel_len_mode == PanelLengthMode.Fixed:
+            self.song_name_label.set_max_width_chars(1)
+            self.song_author_label.set_max_width_chars(1)
+        else:
+            self.song_name_label.set_max_width_chars(-1)
+            self.song_author_label.set_max_width_chars(-1)

@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
     <schema id="com.github.zalesyc.budgie-media-player-applet">
-        <!--TODO: improve/add descriptions -->
-        <key type="u" name="panel-length-type">
-            <summary>How to set the panel length</summary>
-            <description>no limit: 0, 1: variable, 2: fixed</description>
-	        <default>0</default>
+        <key type="u" name="panel-length-mode">
+            <summary>Panel length mode</summary>
+            <description>: 0: No limit, 1: Variable / Max length, 2: Fixed</description>
+	        <default>1</default>
         </key>
-        <key type="u" name="panel-max-length">
-            <summary>Length of the applet</summary>
-            <description>TODO</description>
-	        <default>200</default>
+        <key type="u" name="panel-length-fixed">
+            <summary>Length of the applet when mode set to Fixed (0)</summary>
+            <description> </description>
+	        <default>300</default>
         </key>
         <key type="i" name="author-name-max-length">
             <summary>Maximum length of author's name</summary>
-            <description>The maximum length, in characters, of the playing media author's name, if less than 0, set an unlimited length.</description>
+            <description>The maximum length, in characters, of the playing media author's name, if less than 0, set an unlimited length. This value is only used when panel-length-mode is set to Variable (1)</description>
 	        <default>25</default>
         </key>
 
         <key type="i" name="media-title-max-length">
             <summary>Maximum length of the playing media's title</summary>
-            <description>The maximum length, in characters, of the playing media's title, if less than 0, set an unlimited length.</description>
+            <description>The maximum length, in characters, of the playing media's title, if less than 0, set an unlimited length. This value is only used when panel-length-mode is set to Variable (1)</description>
 	        <default>40</default>
         </key>
         <key type="as" name="element-order">

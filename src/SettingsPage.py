@@ -8,7 +8,7 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gtk, Gio
 
 from Labels import LabelWSubtitle
-from EnumsStructs import PanelLengthType
+from EnumsStructs import PanelLengthMode
 from math import ceil
 from typing import Union
 
@@ -90,8 +90,8 @@ class PanelSettingsPage(_SettingsPageBase):
             },
             hexpand=True,
         )
-        max_len_type: PanelLengthType = PanelLengthType(
-            settings.get_uint("panel-length-type")
+        max_len_type: PanelLengthMode = PanelLengthMode(
+            settings.get_uint("panel-length-mode")
         )
         max_len_title = LabelWSubtitle(
             title="Length:",
@@ -100,7 +100,7 @@ class PanelSettingsPage(_SettingsPageBase):
         )
 
         max_len_no_limit_radio = Gtk.RadioButton(
-            active=max_len_type == PanelLengthType.NoLimit,
+            active=max_len_type == PanelLengthMode.NoLimit,
         )
         max_len_no_limit_radio.connect(
             "toggled",
@@ -116,7 +116,7 @@ class PanelSettingsPage(_SettingsPageBase):
 
         max_len_fixed_radio = Gtk.RadioButton(
             group=max_len_no_limit_radio,
-            active=max_len_type == PanelLengthType.Fixed,
+            active=max_len_type == PanelLengthMode.Fixed,
         )
         max_len_fixed_label = LabelWSubtitle(
             title="Fixed",
@@ -133,13 +133,15 @@ class PanelSettingsPage(_SettingsPageBase):
         max_len_fixed_value_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 10, 1000, 1
         )
-        max_len_fixed_value_scale.set_sensitive(max_len_type == PanelLengthType.Fixed)
+        max_len_fixed_value_scale.set_sensitive(max_len_type == PanelLengthMode.Fixed)
         max_len_fixed_value_scale.set_value_pos(Gtk.PositionType.LEFT)
-        max_len_fixed_value_scale.set_value(self.settings.get_uint("panel-max-length"))
+        max_len_fixed_value_scale.set_value(
+            self.settings.get_uint("panel-length-fixed")
+        )
         max_len_fixed_value_scale.connect(
             "value-changed",
             lambda scale: self.settings.set_uint(
-                "panel-max-length", round(scale.get_value())
+                "panel-length-fixed", round(scale.get_value())
             ),
         )
         max_len_fixed_radio.connect(
@@ -150,7 +152,7 @@ class PanelSettingsPage(_SettingsPageBase):
 
         max_len_variable_radio = Gtk.RadioButton(
             group=max_len_no_limit_radio,
-            active=max_len_type == PanelLengthType.Variable,
+            active=max_len_type == PanelLengthMode.Variable,
         )
         max_len_variable_label = LabelWSubtitle(
             title="Maximal Length",
@@ -175,7 +177,7 @@ class PanelSettingsPage(_SettingsPageBase):
         max_len_variable_value_name = self.settings.get_int("media-title-max-length")
         self.max_len_variable_value_name_check = Gtk.CheckButton(
             active=max_len_variable_value_name >= 0,
-            sensitive=max_len_type == PanelLengthType.Variable,
+            sensitive=max_len_type == PanelLengthMode.Variable,
         )
         self.max_len_variable_value_name_spin = Gtk.SpinButton.new_with_range(
             min=5,
@@ -187,7 +189,7 @@ class PanelSettingsPage(_SettingsPageBase):
         )
         self.max_len_variable_value_name_spin.set_sensitive(
             max_len_variable_value_name >= 0
-            and max_len_type == PanelLengthType.Variable
+            and max_len_type == PanelLengthMode.Variable
         )
         max_len_variable_value_name_box.pack_start(
             self.max_len_variable_value_name_check, False, False, 15
@@ -223,7 +225,7 @@ class PanelSettingsPage(_SettingsPageBase):
         max_len_variable_value_author = self.settings.get_int("author-name-max-length")
         self.max_len_variable_value_author_check = Gtk.CheckButton(
             active=max_len_variable_value_author >= 0,
-            sensitive=max_len_type == PanelLengthType.Variable,
+            sensitive=max_len_type == PanelLengthMode.Variable,
         )
         self.max_len_variable_value_author_spin = Gtk.SpinButton.new_with_range(
             min=5,
@@ -241,7 +243,7 @@ class PanelSettingsPage(_SettingsPageBase):
         )
         self.max_len_variable_value_author_spin.set_sensitive(
             max_len_variable_value_author >= 0
-            and max_len_type == PanelLengthType.Variable
+            and max_len_type == PanelLengthMode.Variable
         )
         self.max_len_variable_value_author_check.connect(
             "toggled",
@@ -326,7 +328,7 @@ class PanelSettingsPage(_SettingsPageBase):
         radio: Gtk.ToggleButton,
     ):
         if radio.get_active():
-            self.settings.set_uint("panel-length-type", PanelLengthType.NoLimit)
+            self.settings.set_uint("panel-length-mode", PanelLengthMode.NoLimit)
 
     def _fixed_len_radio_toggled(
         self,
@@ -338,7 +340,7 @@ class PanelSettingsPage(_SettingsPageBase):
             widget.set_sensitive(active)
 
         if active:
-            self.settings.set_uint("panel-length-type", PanelLengthType.Fixed)
+            self.settings.set_uint("panel-length-mode", PanelLengthMode.Fixed)
 
     def _variable_len_radio_toggled(
         self,
@@ -356,7 +358,7 @@ class PanelSettingsPage(_SettingsPageBase):
             self.max_len_variable_value_author_spin.set_sensitive(active)
 
         if active:
-            self.settings.set_uint("panel-length-type", PanelLengthType.Variable)
+            self.settings.set_uint("panel-length-mode", PanelLengthMode.Variable)
 
 
 class PopoverSettingsPage(_SettingsPageBase):

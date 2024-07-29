@@ -32,8 +32,7 @@ class AlbumCoverData:
     song_cover_other: Union[Gio.Icon, str, None]
 
 
-# TODO: come up with better names
-class PanelLengthType(IntEnum):
+class PanelLengthMode(IntEnum):
     NoLimit = 0
     Variable = 1
     Fixed = 2
