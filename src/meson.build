@@ -8,5 +8,6 @@ install_data(
     'mprisWrapper.py',
     'SettingsPage.py',
     'Labels.py',
+    'FixedSizeBin.py',
     install_dir: PLUGINS_INSTALL_DIR
 )

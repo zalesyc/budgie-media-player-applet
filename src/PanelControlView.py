@@ -19,7 +19,6 @@ from gi.repository.Pango import EllipsizeMode
 class Element:
     widget: Gtk.Widget
     spacing: int = 0
-    expand: bool = False
 
 
 class PanelControlView(Gtk.Box):
@@ -67,21 +66,17 @@ class PanelControlView(Gtk.Box):
             self.set_album_cover(album_cover)
 
         # song_name
-        self.song_name_label.set_xalign(0.0)
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
         song_name_event_box.connect("button-press-event", self._song_clicked)
-        self.available_elements.update(
-            {"song_name": Element(song_name_event_box, 4, expand=True)}
-        )
+        self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
 
         # song_author
-        self.song_name_label.set_xalign(0.0)
         song_author_event_box = Gtk.EventBox()
         song_author_event_box.add(self.song_author_label)
         song_author_event_box.connect("button-press-event", self._song_clicked)
         self.available_elements.update(
-            {"song_author": Element(song_author_event_box, 4, expand=True)}
+            {"song_author": Element(song_author_event_box, 4)}
         )
 
         # song_separator
@@ -251,9 +246,7 @@ class PanelControlView(Gtk.Box):
                     "not in available elements - probably wrong settings -> skipping"
                 )
                 continue
-            self.pack_start(
-                element.widget, element.expand, element.expand, element.spacing
-            )
+            self.pack_start(element.widget, False, False, element.spacing)
 
         self.show_all()
 
@@ -311,9 +304,6 @@ class PanelControlView(Gtk.Box):
             self.song_author_label.set_max_width_chars(
                 max(-1, self.settings.get_int("author-name-max-length"))
             )
-        elif panel_len_mode == PanelLengthMode.Fixed:
-            self.song_name_label.set_max_width_chars(1)
-            self.song_author_label.set_max_width_chars(1)
         else:
             self.song_name_label.set_max_width_chars(-1)
             self.song_author_label.set_max_width_chars(-1)
