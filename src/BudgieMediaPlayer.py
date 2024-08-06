@@ -5,6 +5,8 @@ from typing import Optional
 import gi
 from SettingsPage import SettingsPage
 from PopupPlasmaControlView import PopupPlasmaControlView
+from EnumsStructs import PanelLengthMode
+from FixedSizeBin import FixedSizeBin
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
@@ -30,6 +32,12 @@ class BudgieMediaPlayer(Budgie.Applet):
 
         self.box: Gtk.Box = Gtk.Box(spacing=10)
         self.add(self.box)
+
+        self.panel_view_size_bin: FixedSizeBin = FixedSizeBin(
+            size=self.settings.get_uint("panel-length-fixed"),
+            orientation=self.orientation,
+        )
+        self.box.pack_start(self.panel_view_size_bin, False, False, 0)
 
         self.popup_icon: Gtk.Image = Gtk.Image.new_from_icon_name(
             "budgie-media-player-applet-arrow-drop-down-symbolic", Gtk.IconSize.MENU
@@ -164,11 +172,21 @@ class BudgieMediaPlayer(Budgie.Applet):
             )
             return
 
+        if changed_key_name in {"panel-length-mode", "panel-length-fixed"}:
+            if self.settings.get_uint("panel-length-mode") == PanelLengthMode.Fixed:
+                self.panel_view_size_bin.set_size(
+                    self.settings.get_uint("panel-length-fixed")
+                )
+            else:
+                self.panel_view_size_bin.set_size(None)
+            return
+
     def _add_panel_view(self, player: PopupPlasmaControlView) -> None:
         player.add_panel_view(
             orientation=self.orientation,
         )
-        self.box.pack_start(player.panel_view, False, False, 0)
+        # self.box.pack_start(player.panel_view, True, True, 0)
+        self.panel_view_size_bin.add(player.panel_view)
         self.panel_player_service_name = player.service_name
 
     def _add_popup_plasma_control_view(self, service_name: str) -> None:
@@ -206,6 +224,9 @@ class BudgieMediaPlayer(Budgie.Applet):
             player := self.players_list.get(self.panel_player_service_name, None)
         ) is not None:
             player.panel_orientation_changed(self.orientation)
+
+        if self.settings.get_uint("panel-length-mode") == PanelLengthMode.Fixed:
+            self.panel_view_size_bin.set_orientation(self.orientation)
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""

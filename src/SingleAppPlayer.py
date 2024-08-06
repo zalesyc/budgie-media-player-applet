@@ -9,7 +9,7 @@ from urllib.parse import urlparse, ParseResult
 import requests
 from PIL import Image
 from PanelControlView import PanelControlView
-from AlbumCoverData import AlbumCoverType, AlbumCoverData
+from EnumsStructs import AlbumCoverType, AlbumCoverData
 from mprisWrapper import MprisWrapper
 
 import gi
