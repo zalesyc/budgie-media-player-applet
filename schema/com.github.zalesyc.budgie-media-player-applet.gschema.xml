@@ -3,12 +3,12 @@
     <schema id="com.github.zalesyc.budgie-media-player-applet">
         <key type="u" name="panel-length-mode">
             <summary>Panel length mode</summary>
-            <description>: 0: No limit, 1: Variable / Max length, 2: Fixed</description>
+            <description>Mode for how the applet in the panel is sized: 0: No limit, 1: Variable / Max length, 2: Fixed.</description>
 	        <default>1</default>
         </key>
         <key type="u" name="panel-length-fixed">
             <summary>Length of the applet when mode set to Fixed (0)</summary>
-            <description> </description>
+            <description>Length of the applet when mode is set to Fixed (0), the size is in pixels.</description>
 	        <default>300</default>
         </key>
         <key type="i" name="author-name-max-length">
