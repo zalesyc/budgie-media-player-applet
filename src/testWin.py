@@ -25,6 +25,8 @@ class MyWindow(Gtk.Window):
             if sys.argv[1] == "-v":
                 self.player.do_panel_position_changed(Budgie.PanelPosition.LEFT)
         self.add(self.player)
+        popover_mgr = Budgie.PopoverManager()
+        self.player.do_update_popovers(popover_mgr)
 
 
 def main():

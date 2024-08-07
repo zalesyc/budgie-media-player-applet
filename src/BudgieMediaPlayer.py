@@ -50,9 +50,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.box.pack_end(self.popup_icon_event_box, False, False, 0)
 
         self.popover: Popover = Popover(relative_to=self, settings=self.settings)
-
-        self.popover_manager: Budgie.PopoverManager = Budgie.PopoverManager()
-        self.popover_manager.register_popover(self, self.popover)
+        self.popover_manager: Optional[Budgie.PopoverManager] = None
 
         self.session_bus: Gio.DBusConnection = Gio.bus_get_sync(
             Gio.BusType.SESSION, None
@@ -81,7 +79,8 @@ class BudgieMediaPlayer(Budgie.Applet):
             self.popup_icon.hide()
 
     def show_popup(self, *_) -> None:
-        self.popover_manager.show_popover(self)
+        if self.popover_manager is not None:
+            self.popover_manager.show_popover(self)
 
     def favorite_player_clicked(self, service_name: str) -> None:
         if len(self.players_list) <= 1:
@@ -211,3 +210,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         """Return True if support setting through Budgie Setting,
         False otherwise."""
         return True
+
+    def do_update_popovers(self, manager: Budgie.PopoverManager) -> None:
+        self.popover_manager = manager
+        self.popover_manager.register_popover(self, self.popover)
