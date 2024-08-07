@@ -12,10 +12,6 @@ from gi.repository import Gtk, Gio, Budgie
 
 
 class Popover(Budgie.Popover):
-    """
-    Budgie.Popover inherits from Gtk.Popover
-    """
-
     def __init__(self, relative_to: Gtk.Widget, settings: Gio.Settings):
         super().__init__(relative_to=relative_to)
         self._nothing_is_playing_label: Optional[Gtk.Widget] = None
