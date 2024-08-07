@@ -9,5 +9,6 @@ install_data(
     'SettingsPage.py',
     'Labels.py',
     'FixedSizeBin.py',
+    'Popover.py',
     install_dir: PLUGINS_INSTALL_DIR
 )

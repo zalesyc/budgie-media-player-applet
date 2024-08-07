@@ -7,6 +7,7 @@ from SettingsPage import SettingsPage
 from PopupPlasmaControlView import PopupPlasmaControlView
 from EnumsStructs import PanelLengthMode
 from FixedSizeBin import FixedSizeBin
+from Popover import Popover
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
@@ -48,12 +49,8 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.popup_icon_event_box.connect("button-press-event", self.show_popup)
         self.box.pack_end(self.popup_icon_event_box, False, False, 0)
 
-        self.popover: Budgie.Popover = Budgie.Popover.new(self)
-        self.popover.set_size_request(
-            width=self.settings.get_uint("popover-width"),
-            height=self.settings.get_uint("popover-height"),
-        )
-        self.popover.connect("closed", self.on_popover_close)
+        self.popover: Popover = Popover(relative_to=self, settings=self.settings)
+
         self.popover_manager: Budgie.PopoverManager = Budgie.PopoverManager()
         self.popover_manager.register_popover(self, self.popover)
 
@@ -74,14 +71,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.players_list: dict[str, PopupPlasmaControlView] = {}
         # service name of the player that has the panel view
         self.panel_player_service_name: Optional[str] = None
-        self.popover_ntb: Gtk.Notebook = Gtk.Notebook(
-            margin_start=5,
-            margin_end=5,
-            margin_bottom=5,
-            show_border=False,
-            scrollable=True,
-        )
-        self.popover.add(self.popover_ntb)
 
         for dbus_service_name in dbus_names:
             self._add_popup_plasma_control_view(dbus_service_name)
@@ -93,12 +82,6 @@ class BudgieMediaPlayer(Budgie.Applet):
 
     def show_popup(self, *_) -> None:
         self.popover_manager.show_popover(self)
-        for player in self.players_list.values():
-            player.popover_to_be_open()
-
-    def on_popover_close(self, _) -> None:
-        for player in self.players_list.values():
-            player.popover_just_closed()
 
     def favorite_player_clicked(self, service_name: str) -> None:
         if len(self.players_list) <= 1:
@@ -143,7 +126,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             if player_to_get_del is None:
                 return
 
-            self.popover_ntb.remove(player_to_get_del)
+            player_to_get_del.destroy()
 
             if player_to_get_del.panel_view is None:
                 return
@@ -163,13 +146,6 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.popup_icon.show()
             else:
                 self.popup_icon.hide()
-            return
-
-        if changed_key_name in {"popover-width", "popover-height"}:
-            self.popover.set_size_request(
-                width=self.settings.get_uint("popover-width"),
-                height=self.settings.get_uint("popover-height"),
-            )
             return
 
         if changed_key_name in {"panel-length-mode", "panel-length-fixed"}:
@@ -197,8 +173,7 @@ class BudgieMediaPlayer(Budgie.Applet):
             settings=self.settings,
         )
 
-        self.popover_ntb.append_page(new_view, new_view.icon)
-        self.popover_ntb.show_all()
+        self.popover.add_player(new_view)
 
         if len(self.players_list) < 1:
             self._add_panel_view(new_view)
