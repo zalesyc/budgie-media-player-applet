@@ -359,7 +359,7 @@ class SingleAppPlayer(Gtk.Bin):
                         self._album_cover_changed(desktop_icon, AlbumCoverType.Gicon)
                     return
 
-        self._album_cover_changed("multimedia-player-symbolic", AlbumCoverType.IconName)
+        self._album_cover_changed("emblem-music-symbolic", AlbumCoverType.IconName)
 
     def _set_album_cover_file(self, parsed_url: ParseResult) -> None:
         try:
@@ -458,7 +458,7 @@ class SingleAppPlayer(Gtk.Bin):
                         self.icon.set_from_gicon(desktop_icon, self.ICON_SIZE)
                         return
 
-        self.icon.set_from_icon_name("multimedia-player-symbolic", self.ICON_SIZE)
+        self.icon.set_from_icon_name("emblem-music-symbolic", self.ICON_SIZE)
 
     def _get_resized_pixbuf(
         self, available_height: int, available_width: int, portion_to_fill: float

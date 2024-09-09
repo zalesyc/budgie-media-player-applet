@@ -12,7 +12,7 @@ install_data(
     'media-playback-start-symbolic.svg',
     'media-skip-backward-symbolic.svg',
     'media-skip-forward-symbolic.svg',
-    'multimedia-player-symbolic.svg',
+    'emblem-music-symbolic.svg',
     'go-up-symbolic.svg',
     'go-down-symbolic.svg',
     'go-next-symbolic.svg',
