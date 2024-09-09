@@ -80,9 +80,12 @@ class PanelControlView(Gtk.Box):
         )
 
         # song_separator
+        song_separator_event_box = Gtk.EventBox()
+        song_separator_event_box.add(self.song_separator)
+        song_separator_event_box.connect("button-press-event", self._song_clicked)
         self._set_separator_text(settings.get_string("separator-text"))
         self.available_elements.update(
-            {"song_separator": Element(self.song_separator, 4)}
+            {"song_separator": Element(song_separator_event_box, 4)}
         )
 
         self._set_song_label(title=title, author=artist)
