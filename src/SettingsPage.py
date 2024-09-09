@@ -372,7 +372,7 @@ class PopoverSettingsPage(_SettingsPageBase):
         width_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
             min=80,
-            max=1000,
+            max=2000,
             step=1,
         )
         width_scale.set_hexpand(True)
@@ -391,7 +391,7 @@ class PopoverSettingsPage(_SettingsPageBase):
         height_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
             min=80,
-            max=1000,
+            max=2000,
             step=1,
         )
         height_scale.set_hexpand(True)
