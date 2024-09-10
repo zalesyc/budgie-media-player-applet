@@ -17,14 +17,17 @@ This applet targets python 3.9+ so, don't use any newer features.
 
 For formatting, I use [black](https://github.com/psf/black)
 
-## Install
-### Install from the budgie extras app
- **Only Ubuntu Budgie 22.04+**
+## Install - Prebuild Packages
+**Note:** I am not the maintainer of any of these packages
+
+For other distributions, see: [_Install - Build from source_](https://github.com/zalesyc/budgie-media-player-applet/edit/main/README.md#install---build-from-source)
+### Budgie extras app
+ _Ubuntu Budgie 22.04+_
 
 Go into the budgie extras app on ubuntu budgie and install Media Player Applet
 
-### Install from the command line using package manager
-**Only Ubuntu 22.04+**
+### Ubuntu
+_22.04+_
 
  #### 1. Add the ubuntubudgie/backports ppa
  ~~~ shell
@@ -39,8 +42,11 @@ sudo apt update
 sudo apt install budgie-media-player-applet
 ~~~
 
+### Nixos
+see: [Nixos Packages](https://search.nixos.org/packages?show=budgiePlugins.budgie-media-player-applet)
 
-### Build from source
+
+## Install - Build from source
 #### 1. Install dependencies
 Ubuntu, Debian:
 ~~~ shell
@@ -90,19 +96,19 @@ git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie
 ~~~
 
 #### 3. Build the applet
-Ubuntu, Arch Linux
+Ubuntu, Debian, Arch Linux
 ~~~ shell
-meson setup build --libdir=/usr/lib --prefix=/usr
+meson setup build --libdir=/usr/lib --prefix=/usr && cd build
 ~~~
 
 Fedora, openSUSE
 ~~~ shell
-meson setup build --libdir=/usr/lib64 --prefix=/usr
+meson setup build --libdir=/usr/lib64 --prefix=/usr && cd build
 ~~~
 
 #### 4. Install the applet
 ~~~ shell
-cd build && sudo ninja install
+sudo ninja install
 ~~~
 
 The applet becomes visible only when there is media actively playing.
