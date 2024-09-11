@@ -35,7 +35,11 @@ class BudgieMediaPlayer(Budgie.Applet):
         self.add(self.box)
 
         self.panel_view_size_bin: FixedSizeBin = FixedSizeBin(
-            size=self.settings.get_uint("panel-length-fixed"),
+            size=(
+                self.settings.get_uint("panel-length-fixed")
+                if self.settings.get_uint("panel-length-mode") == PanelLengthMode.Fixed
+                else None
+            ),
             orientation=self.orientation,
         )
         self.box.pack_start(self.panel_view_size_bin, False, False, 0)
@@ -199,8 +203,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         ) is not None:
             player.panel_orientation_changed(self.orientation)
 
-        if self.settings.get_uint("panel-length-mode") == PanelLengthMode.Fixed:
-            self.panel_view_size_bin.set_orientation(self.orientation)
+        self.panel_view_size_bin.set_orientation(self.orientation)
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""
