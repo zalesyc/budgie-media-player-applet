@@ -431,7 +431,7 @@ class PopoverSettingsPage(_SettingsPageBase):
 
         text_style_combobox = Gtk.ComboBoxText()
         text_style_combobox.append("0", "Ellipt (Cut)")
-        text_style_combobox.append("1", "Scroll, may be laggy")
+        text_style_combobox.append("1", "Scroll, may be jittery")
         text_style_combobox.set_active_id(
             str(self.settings.get_uint("plasma-popover-text-style"))
         )

@@ -110,8 +110,10 @@ meson setup build --libdir=/usr/lib64 --prefix=/usr && cd build
 ~~~ shell
 sudo ninja install
 ~~~
+#### 5. Add the applet from Budgie Desktop Settings
+When upgrading the applet, you may need to log out and back in, for the changes to show up
 
-The applet becomes visible only when there is media actively playing.
+**Note:** The applet becomes visible only when there is media actively playing.
 
 ## Troubleshooting
 ### Instalation does not work
