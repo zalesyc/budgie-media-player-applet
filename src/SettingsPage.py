@@ -517,6 +517,9 @@ class PopoverSettingsPage(_SettingsPageBase):
             halign=Gtk.Align.START,
             margin_left=50,
         )
+        # The value in this scale is plasma-popover-media-name-scrolling-speed * 4
+        # because it looks better when the scale is in whole numbers,
+        # but it still needs precision
         self.scrolling_speed_name_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL,
             min=1,

@@ -164,7 +164,6 @@ class BudgieMediaPlayer(Budgie.Applet):
         player.add_panel_view(
             orientation=self.orientation,
         )
-        # self.box.pack_start(player.panel_view, True, True, 0)
         self.panel_view_size_bin.add(player.panel_view)
         self.panel_player_service_name = player.service_name
 

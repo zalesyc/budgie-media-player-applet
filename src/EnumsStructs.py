@@ -13,7 +13,7 @@ from gi.repository import Gio, GdkPixbuf
 """
 This file is for enums and dataclasses (structs) 
 that are accessed from multiple files and having 
-them there would result in circular dependencies
+them there would result in circular imports
 """
 
 
