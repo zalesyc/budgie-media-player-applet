@@ -66,6 +66,8 @@ class SingleAppPlayer(Gtk.Bin):
         self.can_go_next: bool = False
         self.rate: float = 1.0
 
+        self.connect("destroy", self._on_destroy)
+
         if (
             playing := self.dbus_player.get_player_property("PlaybackStatus")
         ) is not None:
@@ -161,7 +163,15 @@ class SingleAppPlayer(Gtk.Bin):
 
         self.pinned_changed()
 
-    def remove_panel_view(self) -> None:
+    def remove_panel_view(self, on_destroy: bool = False) -> None:
+        """on destroy is used when self is being destroyed, used internally
+        in self._on_destroy"""
+        if on_destroy:
+            if self.panel_view is not None:
+                self.panel_view.destroy()
+                self.panel_view = None
+            return
+
         if self.panel_view is None:
             print(
                 "budgie-media-player-applet: trying to remove panel_view, "
@@ -170,7 +180,6 @@ class SingleAppPlayer(Gtk.Bin):
             return
         self.panel_view.destroy()
         self.panel_view = None
-        self.pinned_changed()
 
     def panel_size_changed(self, new_size: int) -> None:
         if self.panel_view is not None:
@@ -489,3 +498,6 @@ class SingleAppPlayer(Gtk.Bin):
                 GdkPixbuf.InterpType.BILINEAR,
             )
         return resized_pixbuf
+
+    def _on_destroy(self, _) -> None:
+        self.remove_panel_view(on_destroy=True)

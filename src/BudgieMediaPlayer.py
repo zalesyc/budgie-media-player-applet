@@ -129,19 +129,16 @@ class BudgieMediaPlayer(Budgie.Applet):
             if player_to_get_del is None:
                 return
 
+            had_panel_view = player_to_get_del.panel_view is not None
             player_to_get_del.destroy()
 
-            if player_to_get_del.panel_view is None:
-                return
-
-            player_to_get_del.remove_panel_view()
-
-            if len(self.players_list) > 0:
-                for player in self.players_list.values():
-                    self._add_panel_view(player)
-                    break
-            else:
-                self.panel_player_service_name = None
+            if had_panel_view:
+                if len(self.players_list) > 0:
+                    for player in self.players_list.values():
+                        self._add_panel_view(player)
+                        break
+                else:
+                    self.panel_player_service_name = None
 
     def settings_changed(self, _, changed_key_name: str) -> None:
         if changed_key_name == "show-arrow":
