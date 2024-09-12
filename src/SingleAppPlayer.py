@@ -3,11 +3,9 @@
 
 import threading
 from typing import Optional, Union, Callable
-from io import BytesIO
 from dataclasses import dataclass
 from urllib.parse import urlparse, ParseResult
 import requests
-from PIL import Image
 from PanelControlView import PanelControlView
 from EnumsStructs import AlbumCoverType, AlbumCoverData
 from mprisWrapper import MprisWrapper
