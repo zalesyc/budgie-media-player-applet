@@ -79,7 +79,6 @@ sudo zypper in git-core ninja meson glib2-tools python3-requests python3-gobject
 - budgie-1.0
 - gtk+-3.0
 - python3 >= 3.9
-- python3-pil / python3-pillow
 - python3-requests
 - python3-gobject
 - gsettings
