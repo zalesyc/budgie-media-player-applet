@@ -412,38 +412,24 @@ class SingleAppPlayer(Gtk.Bin):
     def _download_album_cover_image_to_gdkpixbuf(
         url: str, stop_event: threading.Event
     ) -> Optional[GdkPixbuf.Pixbuf]:
+        img_stream = Gio.MemoryInputStream()
         try:
-            # Send a GET request to the URL
             response = requests.get(url, stream=True, timeout=4)
             if response.status_code != 200:
                 return None
 
-            # Read the image data in chunks
-            img_data = BytesIO()
             for chunk in response.iter_content(chunk_size=1024):
                 if stop_event.is_set():
                     response.close()
                     return None
-                img_data.write(chunk)
+                img_stream.add_bytes(GLib.Bytes.new(chunk))
 
-            # Rewind the buffer and open as an image with Pillow
-            img_data.seek(0)
-            pil_image = Image.open(img_data)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_stream(img_stream, None)
 
-            # Convert the Pillow image to a GdkPixbuf
-            pixbuf = GdkPixbuf.Pixbuf.new_from_data(
-                pil_image.tobytes(),  # Image data as bytes
-                GdkPixbuf.Colorspace.RGB,
-                False,
-                8,  # Bits per sample
-                pil_image.width,
-                pil_image.height,
-                pil_image.width * 3,
-                None,
-            )
-
-        except Exception:
+        except requests.exceptions.RequestException:
             return None
+        finally:
+            img_stream.close()
 
         if stop_event.is_set():
             return None
