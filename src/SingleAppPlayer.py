@@ -168,6 +168,7 @@ class SingleAppPlayer(Gtk.Bin):
             if self.panel_view is not None:
                 self.panel_view.destroy()
                 self.panel_view = None
+                self.pinned_changed()
             return
 
         if self.panel_view is None:
@@ -178,6 +179,7 @@ class SingleAppPlayer(Gtk.Bin):
             return
         self.panel_view.destroy()
         self.panel_view = None
+        self.pinned_changed()
 
     def panel_size_changed(self, new_size: int) -> None:
         if self.panel_view is not None:
