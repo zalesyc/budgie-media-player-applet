@@ -41,10 +41,12 @@ class Popover(Budgie.Popover):
         self._players_ntb.show_all()
 
     def _on_showed(self, _) -> None:
-        self._players_ntb.foreach(lambda player: player.popover_to_be_open())
+        if self._nothing_is_playing_label is None:
+            self._players_ntb.foreach(lambda player: player.popover_to_be_open())
 
     def _on_closed(self, _) -> None:
-        self._players_ntb.foreach(lambda player: player.popover_just_closed())
+        if self._nothing_is_playing_label is None:
+            self._players_ntb.foreach(lambda player: player.popover_just_closed())
 
     def _settings_changed(self, settings: Gio.Settings, changed_key: str) -> None:
         if changed_key in {"popover-width", "popover-height"}:
@@ -57,7 +59,7 @@ class Popover(Budgie.Popover):
     def _on_page_removed(self, *_) -> None:
         if self._players_ntb.get_n_pages() < 1:
             self._nothing_is_playing_label = Gtk.Label(
-                label='<span size="large" weight="bold">There is nothing playing</span>',
+                label='<span weight="bold">No apps are currently playing audio</span>',
                 use_markup=True,
                 wrap=True,
                 max_width_chars=1,
@@ -68,7 +70,7 @@ class Popover(Budgie.Popover):
                 self._nothing_is_playing_label,
                 Gtk.Label(label=""),
             )
-            self._nothing_is_playing_label.show_all()
+            self._players_ntb.show_all()
 
     def _on_page_added(self, *_) -> None:
         if (

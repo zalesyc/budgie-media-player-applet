@@ -296,6 +296,41 @@ class PanelSettingsPage(_SettingsPageBase):
         )
         show_arrow_switch.connect("state_set", self.show_arrow_changed)
 
+        show_nothing_playing_label = LabelWSubtitle(
+            title="Show ‘Nothing Playing’ Label:",
+            subtitle="Whether to show a label with the text specified below, "
+            "that is shown when there is nothing playing.",
+            wrap_subtitle=True,
+        )
+        show_nothing_playing_enabled = self.settings.get_boolean(
+            "panel-show-nothing-playing"
+        )
+        show_nothing_playing_switch = Gtk.Switch(
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.CENTER,
+            active=show_nothing_playing_enabled,
+        )
+
+        show_nothing_playing_text_label = Gtk.Label(
+            label="Text:",
+            halign=Gtk.Align.START,
+            margin_left=30,
+        )
+        self.show_nothing_playing_text_entry = Gtk.Entry(
+            text=settings.get_string("panel-nothing-playing-text"),
+            sensitive=show_nothing_playing_enabled,
+        )
+        self.show_nothing_playing_text_entry.connect(
+            "changed",
+            lambda _: self.settings.set_string(
+                "panel-nothing-playing-text",
+                self.show_nothing_playing_text_entry.get_text(),
+            ),
+        )
+        show_nothing_playing_switch.connect(
+            "state-set", self._show_nothing_playing_switch_changed
+        )
+
         self.attach(order_label, 0, 0, 2, 1)
         self.attach(order_widget, 0, 1, 2, 1)
 
@@ -319,8 +354,20 @@ class PanelSettingsPage(_SettingsPageBase):
         self.attach(show_arrow_label, 0, 12, 1, 1)
         self.attach(show_arrow_switch, 1, 12, 1, 1)
 
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 13, 2, 1)
+
+        self.attach(show_nothing_playing_label, 0, 14, 1, 1)
+        self.attach(show_nothing_playing_switch, 1, 14, 1, 1)
+        self.attach(show_nothing_playing_text_label, 0, 15, 1, 1)
+        self.attach(self.show_nothing_playing_text_entry, 1, 15, 1, 1)
+
     def show_arrow_changed(self, _, new_state: bool) -> bool:
         self.settings.set_boolean("show-arrow", new_state)
+        return False
+
+    def _show_nothing_playing_switch_changed(self, _, new_state: bool) -> bool:
+        self.settings.set_boolean("panel-show-nothing-playing", new_state)
+        self.show_nothing_playing_text_entry.set_sensitive(new_state)
         return False
 
     def _no_limit_len_radio_toggled(

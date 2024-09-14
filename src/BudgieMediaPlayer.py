@@ -1,7 +1,7 @@
 # Copyright 2023 - 2024, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Callable
 import gi
 from SettingsPage import SettingsPage
 from PopupPlasmaControlView import PopupPlasmaControlView
@@ -14,6 +14,53 @@ gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
 gi.require_version("Budgie", "1.0")
 from gi.repository import Gtk, Gio, GLib, Budgie
+
+
+class NothingPlayingLabel(Gtk.EventBox):
+    def __init__(
+        self,
+        settings: Gio.Settings,
+        open_popover_func: Callable[[], None],
+        orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.settings = settings
+        self._box = Gtk.Box(spacing=5)
+        self._image: Gtk.Image = Gtk.Image.new_from_icon_name(
+            "emblem-music-symbolic", Gtk.IconSize.MENU
+        )
+        self._label = Gtk.Label.new(
+            self.settings.get_string("panel-nothing-playing-text")
+        )
+        self._box.pack_start(self._image, False, False, 0)
+        self._box.pack_start(self._label, False, False, 0)
+        self.set_orientation(orientation)
+        self.add(self._box)
+        self.connect("button-press-event", lambda *args: open_popover_func())
+        self.show_all()
+
+    def set_orientation(self, orientation: Gtk.Orientation) -> None:
+        if orientation == Gtk.Orientation.HORIZONTAL:
+            self._label.set_angle(0)
+            self.set_valign(Gtk.Align.CENTER)
+            self.set_halign(Gtk.Align.FILL)
+        else:
+            self._label.set_angle(270)
+            self.set_halign(Gtk.Align.CENTER)
+            self.set_valign(Gtk.Align.FILL)
+        self._box.set_orientation(orientation)
+
+    def text_changed(self) -> None:
+        self._label.set_text(self.settings.get_string("panel-nothing-playing-text"))
+
+
+@dataclass
+class PanelPlayer:
+    """If service_name is None, there may be nothing_playing_label"""
+
+    service_name: Optional[str] = None
+    nothing_playing_label: Optional[NothingPlayingLabel] = None
 
 
 class BudgieMediaPlayer(Budgie.Applet):
@@ -72,10 +119,13 @@ class BudgieMediaPlayer(Budgie.Applet):
 
         self.players_list: dict[str, PopupPlasmaControlView] = {}
         # service name of the player that has the panel view
-        self.panel_player_service_name: Optional[str] = None
+        self.panel_player: PanelPlayer = PanelPlayer()
 
-        for dbus_service_name in dbus_names:
-            self._add_popup_plasma_control_view(dbus_service_name)
+        if dbus_names:
+            for dbus_service_name in dbus_names:
+                self._add_popup_plasma_control_view(dbus_service_name)
+        else:
+            self._add_nothing_playing_label()
 
         self.show_all()
 
@@ -90,7 +140,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         if len(self.players_list) <= 1:
             return
 
-        if service_name == self.panel_player_service_name:
+        if service_name == self.panel_player.service_name:
             for key, value in self.players_list.items():
                 if key == service_name:
                     continue
@@ -100,7 +150,7 @@ class BudgieMediaPlayer(Budgie.Applet):
                 return
             return
 
-        self.players_list[self.panel_player_service_name].remove_panel_view()
+        self.players_list[self.panel_player.service_name].remove_panel_view()
 
         self._add_panel_view(self.players_list[service_name])
 
@@ -122,6 +172,9 @@ class BudgieMediaPlayer(Budgie.Applet):
         self, _, __, ___, ____, _____, changes: GLib.Variant
     ) -> None:
         if (changes[0] not in self.players_list) and changes[2]:  # player was added
+            if self.panel_player.nothing_playing_label is not None:
+                self.panel_player.nothing_playing_label.destroy()
+                self.panel_player.nothing_playing_label = None
             self._add_popup_plasma_control_view(changes[0])
 
         elif not changes[2]:  # player was removed
@@ -138,7 +191,8 @@ class BudgieMediaPlayer(Budgie.Applet):
                         self._add_panel_view(player)
                         break
                 else:
-                    self.panel_player_service_name = None
+                    self.panel_player.service_name = None
+                    self._add_nothing_playing_label()
 
     def settings_changed(self, _, changed_key_name: str) -> None:
         if changed_key_name == "show-arrow":
@@ -157,12 +211,23 @@ class BudgieMediaPlayer(Budgie.Applet):
                 self.panel_view_size_bin.set_size(None)
             return
 
+        if changed_key_name == "panel-show-nothing-playing":
+            if self.settings.get_boolean("panel-show-nothing-playing"):
+                self._add_nothing_playing_label()
+            elif self.panel_player.nothing_playing_label is not None:
+                self.panel_player.nothing_playing_label.destroy()
+                self.panel_player.nothing_playing_label = None
+            return
+        if changed_key_name == "panel-nothing-playing-text":
+            if self.panel_player.nothing_playing_label is not None:
+                self.panel_player.nothing_playing_label.text_changed()
+
     def _add_panel_view(self, player: PopupPlasmaControlView) -> None:
         player.add_panel_view(
             orientation=self.orientation,
         )
         self.panel_view_size_bin.add(player.panel_view)
-        self.panel_player_service_name = player.service_name
+        self.panel_player.service_name = player.service_name
 
     def _add_popup_plasma_control_view(self, service_name: str) -> None:
         new_view = PopupPlasmaControlView(
@@ -179,11 +244,26 @@ class BudgieMediaPlayer(Budgie.Applet):
 
         self.players_list.update({new_view.service_name: new_view})
 
+    def _add_nothing_playing_label(self) -> None:
+        if not self.settings.get_boolean("panel-show-nothing-playing"):
+            return
+        if self.panel_player.service_name is not None:
+            return
+        if self.panel_player.nothing_playing_label is not None:
+            return
+
+        self.panel_player.nothing_playing_label = NothingPlayingLabel(
+            self.settings,
+            open_popover_func=self.show_popup,
+            orientation=self.orientation,
+        )
+        self.panel_view_size_bin.add(self.panel_player.nothing_playing_label)
+
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
     ) -> None:
         if (
-            player := self.players_list.get(self.panel_player_service_name, None)
+            player := self.players_list.get(self.panel_player.service_name, None)
         ) is not None:
             player.panel_size_changed(icon_size)
 
@@ -195,9 +275,12 @@ class BudgieMediaPlayer(Budgie.Applet):
 
         self.box.set_orientation(self.orientation)
         if (
-            player := self.players_list.get(self.panel_player_service_name, None)
+            player := self.players_list.get(self.panel_player.service_name, None)
         ) is not None:
             player.panel_orientation_changed(self.orientation)
+
+        if self.panel_player.nothing_playing_label is not None:
+            self.panel_player.nothing_playing_label.set_orientation(self.orientation)
 
         self.panel_view_size_bin.set_orientation(self.orientation)
 
