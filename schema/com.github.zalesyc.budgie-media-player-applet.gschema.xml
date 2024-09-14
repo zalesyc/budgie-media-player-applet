@@ -37,6 +37,16 @@
             <description>Whether to show the arrow, which opens the popover.</description>
             <default>false</default>
         </key>
+        <key type="b" name="panel-show-nothing-playing">
+            <summary>Whether to show a note when there is nothing playing </summary>
+            <description>There is being shown the default icon and the text in panel-nothing-playing-text.</description>
+            <default>true</default>
+        </key>
+        <key type="s" name="panel-nothing-playing-text">
+            <summary>The text used in the panel when there is nothing playing</summary>
+            <description>The text is shown only when panel-show-nothing-playing is true.</description>
+            <default>"There is nothing playing"</default>
+        </key>
         <key type="u" name="popover-width">
             <summary>The width of the popover</summary>
             <description>The width of the popover in px.</description>
