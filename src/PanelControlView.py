@@ -34,13 +34,14 @@ class PanelControlView(Gtk.Box):
         can_go_next: bool,
         open_popover_func: Callable[[], None],
         orientation: Gtk.Orientation,
+        panel_size: int,
         settings: Gio.Settings,
     ):
-        Gtk.Box.__init__(self)
+        Gtk.Box.__init__(self, orientation=orientation)
         self.dbus_player: MprisWrapper = dbus_player
-        self.album_cover_size: int = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
+        self.album_cover_size: int = panel_size
         self.open_popover_func = open_popover_func
-        self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
+        self.orientation: Gtk.Orientation = orientation
         self.settings: Gio.Settings = settings
         self.separator_text: str = ""
         self.available_elements: dict[str, Element] = {}
@@ -66,13 +67,17 @@ class PanelControlView(Gtk.Box):
         if (album_cover is not None) and album_cover.cover_type != AlbumCoverType.Null:
             self.set_album_cover(album_cover)
 
+        label_angle = 0 if self.orientation == Gtk.Orientation.HORIZONTAL else 270
+
         # song_name
+        self.song_name_label.set_angle(label_angle)
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
         song_name_event_box.connect("button-press-event", self._song_clicked)
         self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
 
         # song_author
+        self.song_author_label.set_angle(label_angle)
         song_author_event_box = Gtk.EventBox()
         song_author_event_box.add(self.song_author_label)
         song_author_event_box.connect("button-press-event", self._song_clicked)
@@ -81,6 +86,7 @@ class PanelControlView(Gtk.Box):
         )
 
         # song_separator
+        self.song_name_label.set_angle(label_angle)
         song_separator_event_box = Gtk.EventBox()
         song_separator_event_box.add(self.song_separator)
         song_separator_event_box.connect("button-press-event", self._song_clicked)
@@ -141,17 +147,21 @@ class PanelControlView(Gtk.Box):
             settings.get_strv("element-order"), remove_previous=False
         )
         self._set_song_label(name=title, author=artist)
-        self.set_orientation(orientation)
         self.show_all()
 
-    # overridden parent method
-    def set_orientation(self, new_orientation: Gtk.Orientation) -> None:
+    def set_orientation(self, _):
+        raise Exception("Use orientation_changed instead")
+
+    def orientation_changed(
+        self, new_orientation: Gtk.Orientation, album_cover_data: AlbumCoverData
+    ) -> None:
         self.orientation = new_orientation
         angle = 0 if new_orientation == Gtk.Orientation.HORIZONTAL else 270
         self.song_name_label.set_angle(angle)
         self.song_author_label.set_angle(angle)
         self.song_separator.set_angle(angle)
         super().set_orientation(new_orientation)
+        self.set_album_cover(album_cover_data)
 
     def panel_size_changed(
         self, new_size: int, album_cover_data: AlbumCoverData

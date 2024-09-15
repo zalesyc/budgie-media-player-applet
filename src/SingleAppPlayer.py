@@ -144,6 +144,7 @@ class SingleAppPlayer(Gtk.Bin):
     def add_panel_view(
         self,
         orientation: Gtk.Orientation,
+        panel_size: int,
     ) -> None:
         self.panel_view = PanelControlView(
             dbus_player=self.dbus_player,
@@ -156,6 +157,7 @@ class SingleAppPlayer(Gtk.Bin):
             can_go_next=self.can_go_next,
             open_popover_func=self.open_popover_func,
             orientation=orientation,
+            panel_size=panel_size,
             settings=self.settings,
         )
 
@@ -187,7 +189,7 @@ class SingleAppPlayer(Gtk.Bin):
 
     def panel_orientation_changed(self, new_orientation: Gtk.Orientation) -> None:
         if self.panel_view is not None:
-            self.panel_view.set_orientation(new_orientation)
+            self.panel_view.orientation_changed(new_orientation, self.album_cover_data)
 
     def popover_to_be_open(self) -> None:
         pass

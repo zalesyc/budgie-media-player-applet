@@ -70,7 +70,7 @@ class BudgieMediaPlayer(Budgie.Applet):
         Budgie.Applet.__init__(self)
         self.uuid: str = uuid
 
-        self.album_cover_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
+        self.panel_size = Gtk.IconSize.lookup(Gtk.IconSize.DND)[2]
         self.orientation: Gtk.Orientation = Gtk.Orientation.HORIZONTAL
 
         self.set_settings_prefix("/com/github/zalesyc/budgie-media-player-applet")
@@ -225,6 +225,7 @@ class BudgieMediaPlayer(Budgie.Applet):
     def _add_panel_view(self, player: PopupPlasmaControlView) -> None:
         player.add_panel_view(
             orientation=self.orientation,
+            panel_size=self.panel_size,
         )
         self.panel_view_size_bin.add(player.panel_view)
         self.panel_player.service_name = player.service_name
@@ -262,10 +263,11 @@ class BudgieMediaPlayer(Budgie.Applet):
     def do_panel_size_changed(
         self, panel_size: int, icon_size: int, small_icon_size: int
     ) -> None:
+        self.panel_size = icon_size
         if (
             player := self.players_list.get(self.panel_player.service_name, None)
         ) is not None:
-            player.panel_size_changed(icon_size)
+            player.panel_size_changed(self.panel_size)
 
     def do_panel_position_changed(self, position: Budgie.PanelPosition) -> None:
         if position in {Budgie.PanelPosition.LEFT, Budgie.PanelPosition.RIGHT}:
