@@ -44,6 +44,7 @@ class PanelControlView(Gtk.Box):
         self.settings: Gio.Settings = settings
         self.separator_text: str = ""
         self.available_elements: dict[str, Element] = {}
+        self.element_order: list[str] = []
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "emblem-music-symbolic", Gtk.IconSize.MENU
@@ -87,8 +88,6 @@ class PanelControlView(Gtk.Box):
         self.available_elements.update(
             {"song_separator": Element(song_separator_event_box, 4)}
         )
-
-        self._set_song_label(title=title, author=artist)
 
         # play pause button
         self.play_pause_button.set_image(
@@ -141,6 +140,7 @@ class PanelControlView(Gtk.Box):
         self._set_element_order(
             settings.get_strv("element-order"), remove_previous=False
         )
+        self._set_song_label(name=title, author=artist)
         self.set_orientation(orientation)
         self.show_all()
 
@@ -238,10 +238,11 @@ class PanelControlView(Gtk.Box):
     def _set_element_order(
         self, order: list[str], remove_previous: bool = True
     ) -> None:
+        self.element_order = order
         if remove_previous:
             self.foreach(self.remove)
 
-        for element_name in order:
+        for element_name in self.element_order:
             element = self.available_elements.get(element_name)
             if element is None:
                 print(
@@ -253,31 +254,64 @@ class PanelControlView(Gtk.Box):
 
         self.show_all()
 
-    def _set_song_label(
-        self, author: Optional[list[str]], title: Optional[str]
-    ) -> None:
+    def _set_song_label(self, author: Optional[list[str]], name: Optional[str]) -> None:
+        s_author = self._get_author(author)
+        s_name = self._get_name(name)
+
+        if s_author and s_name:
+            self.song_author_label.set_label(s_author)
+            self.song_name_label.set_label(s_name)
+            self._set_separator_text(self.separator_text)
+            return
+        if s_author and not s_name:
+            self.song_author_label.set_label(s_author)
+            self.song_name_label.set_label("Unknown")
+            self._set_separator_text(self.separator_text)
+            return
+        if not s_author and s_name:
+            self.song_name_label.set_label(s_name)
+            if "song_name" in self.element_order:
+                self.song_author_label.set_label("")
+                self._set_separator_text("", override_set_text=False)
+            else:
+                self.song_author_label.set_label("Unknown")
+                self._set_separator_text(self.separator_text)
+            return
+
+        if "song_name" in self.element_order and "song_author" in self.element_order:
+            self.song_author_label.set_label("")
+            self.song_name_label.set_label("Unknown")
+            self._set_separator_text("", override_set_text=False)
+            return
+
+        self.song_author_label.set_label("Unknown")
+        self.song_name_label.set_label("Unknown")
+        self._set_separator_text("", override_set_text=False)
+
+    @staticmethod
+    def _get_name(title: Optional[str]) -> str:
+        """This func is only used in _set_song_label"""
         if title is None:
-            str_title = "Unknown"
-            if author is None or "".join(author).isspace() or "".join(author) == "":
-                str_author = ""
-                self._set_separator_text("", override_set_text=False)
+            return ""
+        if not title:
+            return ""
+        if title.isspace():
+            return ""
+        return title
 
-            else:
-                str_author = ", ".join(author)
-                self._set_separator_text(self.separator_text)
-
-        else:
-            str_title = title
-            if author is None or "".join(author).isspace() or "".join(author) == "":
-                str_author = ""
-                self._set_separator_text("", override_set_text=False)
-
-            else:
-                str_author = ", ".join(author)
-                self._set_separator_text(self.separator_text)
-
-        self.song_author_label.set_label(str_author)
-        self.song_name_label.set_label(str_title)
+    @staticmethod
+    def _get_author(author: Optional[list[str]]) -> str:
+        """This func is only used in _set_song_label"""
+        if author is None:
+            return ""
+        if not author:
+            return ""
+        j_author = "".join(author)
+        if not j_author:
+            return ""
+        if j_author.isspace():
+            return ""
+        return ", ".join(author)
 
     def _settings_changed(self, settings: Gio.Settings, key: str) -> None:
         if key == "separator-text":
