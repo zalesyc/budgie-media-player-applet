@@ -216,15 +216,23 @@ class PanelControlView(Gtk.Box):
             self.album_cover.set_from_pixbuf(resized_pixbuf)
 
         elif data.cover_type == AlbumCoverType.Gicon:
-            self.album_cover.set_from_gicon(
-                data.song_cover_other, self.album_cover_size
-            )
-
-        elif data.cover_type == AlbumCoverType.IconName:
-            self.album_cover.set_from_icon_name(
+            icon_info = Gtk.IconTheme.get_default().lookup_by_gicon(
                 data.song_cover_other,
                 min(Gtk.IconSize.lookup(Gtk.IconSize.DND)[2], self.album_cover_size),
+                Gtk.IconLookupFlags(Gtk.IconLookupFlags.FORCE_SIZE),
             )
+            if icon_info is not None:
+                pixbuf = icon_info.load_icon()
+                self.album_cover.set_from_pixbuf(pixbuf)
+
+        elif data.cover_type == AlbumCoverType.IconName:
+            pixbuf = Gtk.IconTheme.get_default().load_icon(
+                data.song_cover_other,
+                min(Gtk.IconSize.lookup(Gtk.IconSize.DND)[2], self.album_cover_size),
+                Gtk.IconLookupFlags(Gtk.IconLookupFlags.FORCE_SIZE),
+            )
+            if pixbuf is not None:
+                self.album_cover.set_from_pixbuf(pixbuf)
 
     def _play_paused_clicked(self, *_) -> None:
         self.dbus_player.call_player_method("PlayPause")
