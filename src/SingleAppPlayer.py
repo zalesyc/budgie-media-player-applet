@@ -370,6 +370,20 @@ class SingleAppPlayer(Gtk.Bin):
                         self._album_cover_changed(desktop_icon, AlbumCoverType.Gicon)
                     return
 
+            if desktop_file_name.lower() == "spotify":
+                # This is a workaround for a bug in the spotify app from flatpak,
+                # in MPRIS it reports its desktop file as spotify.desktop, but in
+                # reality it is com.spotify.Client.desktop, which breaks the code above
+                icon_theme = Gtk.IconTheme.get_default()
+                if icon_theme.has_icon("com.spotify.Client"):
+                    self._album_cover_changed(
+                        "com.spotify.Client", AlbumCoverType.IconName
+                    )
+                    return
+                if icon_theme.has_icon("spotify"):
+                    self._album_cover_changed("spotify", AlbumCoverType.IconName)
+                    return
+
         self._album_cover_changed("emblem-music-symbolic", AlbumCoverType.IconName)
 
     def _set_album_cover_file(self, parsed_url: ParseResult) -> None:
@@ -454,6 +468,18 @@ class SingleAppPlayer(Gtk.Bin):
                     if desktop_icon is not None:
                         self.icon.set_from_gicon(desktop_icon, self.ICON_SIZE)
                         return
+
+            if desktop_file_name.lower() == "spotify":
+                # This is a workaround for a bug in the spotify app from flatpak,
+                # in MPRIS it reports its desktop file as spotify.desktop, but in
+                # reality it is com.spotify.Client.desktop, which breaks the code above
+                icon_theme = Gtk.IconTheme.get_default()
+                if icon_theme.has_icon("com.spotify.Client"):
+                    self.icon.set_from_icon_name("com.spotify.Client", self.ICON_SIZE)
+                    return
+                if icon_theme.has_icon("spotify"):
+                    self.icon.set_from_icon_name("spotify", self.ICON_SIZE)
+                    return
 
         self.icon.set_from_icon_name("emblem-music-symbolic", self.ICON_SIZE)
 
