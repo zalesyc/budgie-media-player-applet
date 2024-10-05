@@ -268,8 +268,7 @@ class SingleAppPlayer(Gtk.Bin):
                 self.panel_view.set_metadata(self.artist, self.title)
             self.metadata_changed()
 
-        if changed_art_title:
-            self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
+        self._set_album_cover(metadata.lookup_value("mpris:artUrl", None))
 
     def _can_play_changed(self, metadata: GLib.Variant) -> None:
         new_can_play = metadata.get_boolean()
@@ -335,12 +334,6 @@ class SingleAppPlayer(Gtk.Bin):
             return
 
         url = art_url_variant.get_string()
-
-        if self.album_cover_data.image_url_http == url:
-            return
-
-        self.album_cover_data.image_url_http = url
-
         parsed_url = urlparse(url)
 
         if parsed_url.scheme == "file":
@@ -348,6 +341,10 @@ class SingleAppPlayer(Gtk.Bin):
             return
 
         if parsed_url.scheme == "https":
+            if self.album_cover_data.image_url_http == url:
+                return
+            self.album_cover_data.image_url_http = url
+
             self._set_album_cover_https(url)
             return
 
