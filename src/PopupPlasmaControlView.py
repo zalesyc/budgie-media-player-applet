@@ -287,13 +287,23 @@ class PopupPlasmaControlView(SingleAppPlayer):
                 self.timers_running[key] = False
 
     # overridden parent method
-    def album_cover_changed(self) -> None:
+    def album_cover_changed(self, wait_for_allocation: bool = False) -> None:
+        """
+        wait_for_allocation is used when the popover size changes from settings,
+        it adjusts the album_cover size within the size-allocate signal. This is
+        necessary because if the popover size is reduced, the album cover would still be
+        expanding the popover, leading to larger get_allocated_width() and height
+        values thus setting the album cover size larger, again expanding the popover.
+        """
         if self.album_cover_data.cover_type == AlbumCoverType.Pixbuf:
             allocated_width = self.album_cover.get_allocated_width()
             allocated_height = self.album_cover.get_allocated_height()
-            if allocated_width <= 1 or allocated_height <= 1:
+            if allocated_width <= 1 or allocated_height <= 1 or wait_for_allocation:
                 # wait for allocation in the size-allocate signal
                 self._should_set_album_cover = True
+
+                if wait_for_allocation:
+                    self.album_cover.clear()
             else:
                 self.album_cover.set_from_pixbuf(
                     self._get_resized_pixbuf(
@@ -319,6 +329,11 @@ class PopupPlasmaControlView(SingleAppPlayer):
         if changed_key == "popover-album-cover-size":
             self.album_cover_size = self.settings.get_double("popover-album-cover-size")
             self.album_cover_changed()
+            return
+
+        if changed_key in {"popover-width", "popover-height"}:
+            self.album_cover_changed(wait_for_allocation=True)
+            return
 
         if changed_key == "plasma-popover-text-style":
             style = TextStyle.insert(settings.get_uint("plasma-popover-text-style"))
