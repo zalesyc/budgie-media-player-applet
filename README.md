@@ -60,7 +60,7 @@ sudo dnf install git meson ninja-build python3-requests python3-gobject
 
 Arch Linux:
 ~~~ shell
-sudo pacman -S git meson ninja python-requests
+sudo pacman -S git meson ninja python-requests python-gobject
 ~~~
 
 openSUSE:
