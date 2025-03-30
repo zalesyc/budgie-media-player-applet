@@ -5,20 +5,30 @@ from EnumsStructs import AlbumCoverType, AlbumCoverData, PanelLengthMode
 from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
+from enum import IntEnum
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("GdkPixbuf", "2.0")
 gi.require_version("Pango", "1.0")
+gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, GdkPixbuf, Gio
 from gi.repository.Pango import EllipsizeMode
+from gi.repository.Gdk import EventButton
 
 
 @dataclass
 class Element:
     widget: Gtk.Widget
     spacing: int = 0
+
+
+class ClickAction(IntEnum):
+    open_popover: int = 0
+    play_pause: int = 1
+    next: int = 2
+    previous: int = 3
 
 
 class PanelControlView(Gtk.Box):
@@ -46,6 +56,7 @@ class PanelControlView(Gtk.Box):
         self.separator_text: str = ""
         self.available_elements: dict[str, Element] = {}
         self.element_order: list[str] = []
+        self.click_actions: dict[int, ClickAction] = {}
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "emblem-music-symbolic", Gtk.IconSize.MENU
@@ -146,6 +157,7 @@ class PanelControlView(Gtk.Box):
         self._set_element_order(
             settings.get_strv("element-order"), remove_previous=False
         )
+        self.click_actions = settings.get_value("panel-click-action").unpack()
         self._set_song_label(name=title, author=artist)
         self.show_all()
 
@@ -243,8 +255,16 @@ class PanelControlView(Gtk.Box):
     def _backward_clicked(self, *_) -> None:
         self.dbus_player.call_player_method("Previous")
 
-    def _song_clicked(self, *_) -> None:
-        self.open_popover_func()
+    def _song_clicked(self, _, event: EventButton) -> None:
+        action = self.click_actions.get(event.button, ClickAction.open_popover)
+        if action == ClickAction.next:
+            self._forward_clicked()
+        elif action == ClickAction.previous:
+            self._backward_clicked()
+        elif action == ClickAction.play_pause:
+            self._play_paused_clicked()
+        else:
+            self.open_popover_func()
 
     def _set_separator_text(
         self, new_text: str, override_set_text: bool = True
@@ -342,6 +362,8 @@ class PanelControlView(Gtk.Box):
             "author-name-max-length",
         }:
             self._set_length()
+        elif key == "panel-click-action":
+            self.click_actions = settings.get_value(key).unpack()
 
     def _set_length(self) -> None:
         panel_len_mode = self.settings.get_uint("panel-length-mode")
