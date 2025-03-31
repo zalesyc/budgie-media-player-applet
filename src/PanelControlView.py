@@ -1,11 +1,15 @@
 # Copyright 2024, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from EnumsStructs import AlbumCoverType, AlbumCoverData, PanelLengthMode
+from EnumsStructs import (
+    AlbumCoverType,
+    AlbumCoverData,
+    PanelLengthMode,
+    PanelClickAction,
+)
 from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
-from enum import IntEnum
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -22,13 +26,6 @@ from gi.repository.Gdk import EventButton
 class Element:
     widget: Gtk.Widget
     spacing: int = 0
-
-
-class ClickAction(IntEnum):
-    open_popover: int = 0
-    play_pause: int = 1
-    next: int = 2
-    previous: int = 3
 
 
 class PanelControlView(Gtk.Box):
@@ -56,7 +53,7 @@ class PanelControlView(Gtk.Box):
         self.separator_text: str = ""
         self.available_elements: dict[str, Element] = {}
         self.element_order: list[str] = []
-        self.click_actions: dict[int, ClickAction] = {}
+        self.click_actions: dict[int, PanelClickAction] = {}
 
         self.album_cover: Gtk.Image = Gtk.Image.new_from_icon_name(
             "emblem-music-symbolic", Gtk.IconSize.MENU
@@ -256,12 +253,12 @@ class PanelControlView(Gtk.Box):
         self.dbus_player.call_player_method("Previous")
 
     def _song_clicked(self, _, event: EventButton) -> None:
-        action = self.click_actions.get(event.button, ClickAction.open_popover)
-        if action == ClickAction.next:
+        action = self.click_actions.get(event.button, PanelClickAction.open_popover)
+        if action == PanelClickAction.next:
             self._forward_clicked()
-        elif action == ClickAction.previous:
+        elif action == PanelClickAction.previous:
             self._backward_clicked()
-        elif action == ClickAction.play_pause:
+        elif action == PanelClickAction.play_pause:
             self._play_paused_clicked()
         else:
             self.open_popover_func()

@@ -49,7 +49,7 @@
         </key>
         <key type="a{uu}" name="panel-click-action">
             <summary>Action caused by clicking on the panel with different mouse buttons</summary>
-            <description>What action is caused by clicking on the panel part of the applet. The dictonary key is the mouse button determined by gtk, usually: (1: left; 2: middle; 3: right; ...), the dictonary value is the action to cause: (0: open popover; 1: play/pause, 2: next; 3: previous)</description>
+            <description>What action is caused by clicking on the panel part of the applet. The dictionary key is the mouse button determined by gtk, usually: (1: left; 2: middle; 3: right; ...), the dictionary value is the action to cause: (0: open popover; 1: play/pause, 2: next; 3: previous)</description>
             <default>[{1,0}, {2,1}, {3,0}]</default>
         </key>
 
