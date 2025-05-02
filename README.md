@@ -20,7 +20,7 @@ For formatting, I use [black](https://github.com/psf/black)
 ## Install - Prebuild Packages
 **Note:** I am not the maintainer of any of these packages
 
-For other distributions, see: [_Install - Build from source_](https://github.com/zalesyc/budgie-media-player-applet/edit/main/README.md#install---build-from-source)
+For other distributions, see: [_Install - Build from source_](#install---build-from-source)
 ### Budgie extras app
  _Ubuntu Budgie 22.04+_
 
@@ -111,8 +111,6 @@ sudo ninja install
 ~~~
 #### 5. Add the applet from Budgie Desktop Settings
 When upgrading the applet, you may need to log out and back in, for the changes to show up
-
-**Note:** The applet becomes visible only when there is media actively playing.
 
 ## Troubleshooting
 ### Instalation does not work
