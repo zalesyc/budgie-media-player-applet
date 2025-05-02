@@ -36,3 +36,10 @@ class PanelLengthMode(IntEnum):
     NoLimit = 0
     Variable = 1
     Fixed = 2
+
+
+class PanelClickAction(IntEnum):
+    open_popover: int = 0
+    play_pause: int = 1
+    next: int = 2
+    previous: int = 3

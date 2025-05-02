@@ -5,10 +5,11 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gio", "2.0")
-from gi.repository import Gtk, Gio
+gi.require_version("GLib", "2.0")
+from gi.repository import Gtk, Gio, GLib
 
 from Labels import LabelWSubtitle
-from EnumsStructs import PanelLengthMode
+from EnumsStructs import PanelLengthMode, PanelClickAction
 from math import ceil
 from typing import Union
 
@@ -331,6 +332,67 @@ class PanelSettingsPage(_SettingsPageBase):
             "state-set", self._show_nothing_playing_switch_changed
         )
 
+        mouse_actions_title_label = LabelWSubtitle(
+            "Mouse actions:",
+            "What to do when the song name/author and the cover image is pressed, "
+            "depending on the mouse button the press is coming from.",
+            wrap_subtitle=True,
+        )
+
+        mouse_action_left_btn_label = Gtk.Label(
+            label="Left:",
+            halign=Gtk.Align.START,
+            margin_left=30,
+        )
+        mouse_action_left_btn_combo = Gtk.ComboBoxText()
+        mouse_action_left_btn_combo.connect(
+            "changed", lambda combo: self._mouse_actions_changed(combo, 1)
+        )
+
+        mouse_action_right_btn_label = Gtk.Label(
+            label="Right:",
+            halign=Gtk.Align.START,
+            margin_left=30,
+        )
+        mouse_action_right_btn_combo = Gtk.ComboBoxText()
+        mouse_action_right_btn_combo.connect(
+            "changed", lambda combo: self._mouse_actions_changed(combo, 3)
+        )
+
+        mouse_action_middle_btn_label = Gtk.Label(
+            label="Middle:",
+            halign=Gtk.Align.START,
+            margin_left=30,
+        )
+        mouse_action_middle_btn_combo = Gtk.ComboBoxText()
+        mouse_action_middle_btn_combo.connect(
+            "changed", lambda combo: self._mouse_actions_changed(combo, 2)
+        )
+
+        mouse_actions_availible = (
+            (PanelClickAction.open_popover, "Open Popup"),
+            (PanelClickAction.play_pause, "Play/Pause"),
+            (PanelClickAction.next, "Forward"),
+            (PanelClickAction.previous, "Backward"),
+        )
+        for action_id, action_label in mouse_actions_availible:
+            mouse_action_left_btn_combo.append(str(action_id), action_label)
+            mouse_action_right_btn_combo.append(str(action_id), action_label)
+            mouse_action_middle_btn_combo.append(str(action_id), action_label)
+
+        self.mouse_actions: dict[int, int] = settings.get_value(
+            "panel-click-action"
+        ).unpack()
+        mouse_action_left_btn_combo.set_active_id(
+            str(self.mouse_actions.get(1, PanelClickAction.open_popover))
+        )
+        mouse_action_right_btn_combo.set_active_id(
+            str(self.mouse_actions.get(3, PanelClickAction.open_popover))
+        )
+        mouse_action_middle_btn_combo.set_active_id(
+            str(self.mouse_actions.get(2, PanelClickAction.open_popover))
+        )
+
         self.attach(order_label, 0, 0, 2, 1)
         self.attach(order_widget, 0, 1, 2, 1)
 
@@ -360,6 +422,16 @@ class PanelSettingsPage(_SettingsPageBase):
         self.attach(show_nothing_playing_switch, 1, 14, 1, 1)
         self.attach(show_nothing_playing_text_label, 0, 15, 1, 1)
         self.attach(self.show_nothing_playing_text_entry, 1, 15, 1, 1)
+
+        self.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), 0, 16, 2, 1)
+
+        self.attach(mouse_actions_title_label, 0, 17, 2, 1)
+        self.attach(mouse_action_left_btn_label, 0, 18, 1, 1)
+        self.attach(mouse_action_left_btn_combo, 1, 18, 1, 1)
+        self.attach(mouse_action_right_btn_label, 0, 19, 1, 1)
+        self.attach(mouse_action_right_btn_combo, 1, 19, 1, 1)
+        self.attach(mouse_action_middle_btn_label, 0, 20, 1, 1)
+        self.attach(mouse_action_middle_btn_combo, 1, 20, 1, 1)
 
     def show_arrow_changed(self, _, new_state: bool) -> bool:
         self.settings.set_boolean("show-arrow", new_state)
@@ -406,6 +478,23 @@ class PanelSettingsPage(_SettingsPageBase):
 
         if active:
             self.settings.set_uint("panel-length-mode", PanelLengthMode.Variable)
+
+    def _mouse_actions_changed(
+        self, combo: Gtk.ComboBox, associated_button: int
+    ) -> None:
+        self.mouse_actions[associated_button] = int(combo.get_active_id())
+        self.settings.set_value(
+            "panel-click-action",
+            GLib.Variant.new_array(
+                None,
+                [
+                    GLib.Variant.new_dict_entry(
+                        GLib.Variant.new_uint32(key), GLib.Variant.new_uint32(value)
+                    )
+                    for key, value in self.mouse_actions.items()
+                ],
+            ),
+        )
 
 
 class PopoverSettingsPage(_SettingsPageBase):
