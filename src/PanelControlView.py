@@ -10,6 +10,7 @@ from EnumsStructs import (
 from mprisWrapper import MprisWrapper
 from dataclasses import dataclass
 from typing import Optional, Callable
+from math import ceil, floor
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -23,9 +24,9 @@ from gi.repository.Gdk import EventButton
 
 
 @dataclass
-class Element:
-    widget: Gtk.Widget
-    spacing: int = 0
+class MarginElement:
+    widget: Gtk.Bin
+    margin: int
 
 
 class PanelControlView(Gtk.Box):
@@ -51,7 +52,8 @@ class PanelControlView(Gtk.Box):
         self.orientation: Gtk.Orientation = orientation
         self.settings: Gio.Settings = settings
         self.separator_text: str = ""
-        self.available_elements: dict[str, Element] = {}
+        self.available_elements: dict[str, Gtk.Widget] = {}
+        self.element_margins: list[MarginElement] = []
         self.element_order: list[str] = []
         self.click_actions: dict[int, PanelClickAction] = {}
 
@@ -69,9 +71,8 @@ class PanelControlView(Gtk.Box):
         album_cover_event_box = Gtk.EventBox()
         album_cover_event_box.add(self.album_cover)
         album_cover_event_box.connect("button-press-event", self._song_clicked)
-        self.available_elements.update(
-            {"album_cover": Element(album_cover_event_box, 5)}
-        )
+        self.available_elements.update({"album_cover": album_cover_event_box})
+        self.element_margins.append(MarginElement(album_cover_event_box, 5))
         if (album_cover is not None) and album_cover.cover_type != AlbumCoverType.Null:
             self.set_album_cover(album_cover)
 
@@ -82,16 +83,16 @@ class PanelControlView(Gtk.Box):
         song_name_event_box = Gtk.EventBox()
         song_name_event_box.add(self.song_name_label)
         song_name_event_box.connect("button-press-event", self._song_clicked)
-        self.available_elements.update({"song_name": Element(song_name_event_box, 4)})
+        self.available_elements.update({"song_name": song_name_event_box})
+        self.element_margins.append(MarginElement(song_name_event_box, 4))
 
         # song_author
         self.song_author_label.set_angle(label_angle)
         song_author_event_box = Gtk.EventBox()
         song_author_event_box.add(self.song_author_label)
         song_author_event_box.connect("button-press-event", self._song_clicked)
-        self.available_elements.update(
-            {"song_author": Element(song_author_event_box, 4)}
-        )
+        self.available_elements.update({"song_author": song_author_event_box})
+        self.element_margins.append(MarginElement(song_author_event_box, 4))
 
         # song_separator
         self.song_name_label.set_angle(label_angle)
@@ -99,9 +100,8 @@ class PanelControlView(Gtk.Box):
         song_separator_event_box.add(self.song_separator)
         song_separator_event_box.connect("button-press-event", self._song_clicked)
         self._set_separator_text(settings.get_string("separator-text"))
-        self.available_elements.update(
-            {"song_separator": Element(song_separator_event_box, 4)}
-        )
+        self.available_elements.update({"song_separator": song_separator_event_box})
+        self.element_margins.append(MarginElement(song_separator_event_box, 4))
 
         # play pause button
         self.play_pause_button.set_image(
@@ -118,9 +118,7 @@ class PanelControlView(Gtk.Box):
         self.play_pause_button.set_sensitive(can_play_or_pause)
         self.play_pause_button.connect("button-press-event", self._play_paused_clicked)
         self.play_pause_button.set_tooltip_text("Play / Pause")
-        self.available_elements.update(
-            {"play_pause_button": Element(self.play_pause_button)}
-        )
+        self.available_elements.update({"play_pause_button": self.play_pause_button})
 
         # backward_button
         self.go_previous_button.set_image(
@@ -132,9 +130,7 @@ class PanelControlView(Gtk.Box):
         self.go_previous_button.set_sensitive(can_go_previous)
         self.go_previous_button.connect("button-press-event", self._backward_clicked)
         self.go_previous_button.set_tooltip_text("Go to the previous song / media")
-        self.available_elements.update(
-            {"backward_button": Element(self.go_previous_button)}
-        )
+        self.available_elements.update({"backward_button": self.go_previous_button})
 
         # forward_button
         self.go_next_button.set_image(
@@ -146,7 +142,7 @@ class PanelControlView(Gtk.Box):
         self.go_next_button.set_sensitive(can_go_next)
         self.go_next_button.connect("button-press-event", self._forward_clicked)
         self.go_next_button.set_tooltip_text("Go to the next song / media")
-        self.available_elements.update({"forward_button": Element(self.go_next_button)})
+        self.available_elements.update({"forward_button": self.go_next_button})
 
         self.settings.connect("changed", self._settings_changed)
 
@@ -154,6 +150,7 @@ class PanelControlView(Gtk.Box):
         self._set_element_order(
             settings.get_strv("element-order"), remove_previous=False
         )
+        self._set_element_margins()
         self.click_actions = settings.get_value("panel-click-action").unpack()
         self._set_song_label(name=title, author=artist)
         self.show_all()
@@ -171,6 +168,7 @@ class PanelControlView(Gtk.Box):
         self.song_separator.set_angle(angle)
         super().set_orientation(new_orientation)
         self.set_album_cover(album_cover_data)
+        self._set_element_margins()
 
     def panel_size_changed(
         self, new_size: int, album_cover_data: AlbumCoverData
@@ -278,14 +276,14 @@ class PanelControlView(Gtk.Box):
             self.foreach(self.remove)
 
         for element_name in self.element_order:
-            element = self.available_elements.get(element_name)
-            if element is None:
+            widget = self.available_elements.get(element_name)
+            if widget is None:
                 print(
                     f"budgie-media-player-applet: '{element_name}' "
                     "not in available elements - probably wrong settings -> skipping"
                 )
                 continue
-            self.pack_start(element.widget, False, False, element.spacing)
+            self.pack_start(widget, False, False, 0)
 
         self.show_all()
 
@@ -381,3 +379,19 @@ class PanelControlView(Gtk.Box):
         else:
             self.song_name_label.set_max_width_chars(-1)
             self.song_author_label.set_max_width_chars(-1)
+
+    def _set_element_margins(self):
+        # floor and ceil is used because margins can only be integers and if the spacing is odd
+        # this will distribute it around the element such that one is one px larger than the other
+        # Also the margin has to be set on a child because gtk doesnt accept mouse events on margins
+        for element in self.element_margins:
+            child = element.widget.get_child()
+            if child is None:
+                continue
+
+            if self.orientation == Gtk.Orientation.HORIZONTAL:
+                child.set_margin_start(ceil(element.margin / 2))
+                child.set_margin_end(floor(element.margin / 2))
+            else:
+                child.set_margin_top(ceil(element.margin / 2))
+                child.set_margin_bottom(floor(element.margin / 2))
