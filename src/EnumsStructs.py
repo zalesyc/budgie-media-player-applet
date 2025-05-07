@@ -1,4 +1,4 @@
-# Copyright 2024, zalesyc and the budgie-media-player-applet contributors
+# Copyright 2024 - 2025, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from typing import Optional, Union

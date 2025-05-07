@@ -1,6 +1,6 @@
 #! /bin/python3
 
-# Copyright 2023 - 2024, zalesyc and the budgie-media-player-applet contributors
+# Copyright 2023 - 2025, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
