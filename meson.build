@@ -6,9 +6,24 @@ PLUGINS_INSTALL_DIR = join_paths(get_option('libdir'), 'budgie-desktop', 'plugin
 PIXMAPS_DIR = join_paths(datadir, 'pixmaps')
 HICOLOR_THEME_DIR = join_paths(datadir, 'icons', 'hicolor')
 
+for_wayland = get_option('for-wayland')
+
+if for_wayland == false
+	python_loader = 'python3'
+else
+	python_loader = 'python' 
+endif
+
+configdata= configuration_data()
+configdata.set('PYTHON', python_loader)
+plugininstall = configure_file(
+    input: 'budgie-media-player-applet.plugin.in',
+    output: 'budgie-media-player-applet.plugin',
+    configuration: configdata
+)
 
 install_data(
-    'budgie-media-player-applet.plugin',
+    plugininstall,
     install_dir: PLUGINS_INSTALL_DIR
 )
 

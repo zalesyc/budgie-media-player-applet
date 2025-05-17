@@ -1,0 +1,1 @@
+option('for-wayland', type : 'boolean', value : 'false', description : 'Build only wayland compatible components')
