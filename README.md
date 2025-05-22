@@ -50,22 +50,22 @@ see: [Nixos Packages](https://search.nixos.org/packages?show=budgiePlugins.budgi
 #### 1. Install dependencies
 Ubuntu, Debian:
 ~~~ shell
-sudo apt install git meson ninja-build python3-requests python3-gi libglib2.0-bin
+sudo apt install git meson ninja-build python3-requests python3-gi libglib2.0-bin libxfce4windowing-0-0
 ~~~
 
 Fedora:
 ~~~ shell
-sudo dnf install git meson ninja-build python3-requests python3-gobject
+sudo dnf install git meson ninja-build python3-requests python3-gobject libxfce4windowing
 ~~~
 
 Arch Linux:
 ~~~ shell
-sudo pacman -S git meson ninja python-requests python-gobject
+sudo pacman -S git meson ninja python-requests python-gobject libxfce4windowing
 ~~~
 
 openSUSE:
 ~~~ shell
-sudo zypper in git-core ninja meson glib2-tools python3-requests python3-gobject python3-gobject-Gdk
+sudo zypper in git-core ninja meson glib2-tools python3-requests python3-gobject python3-gobject-Gdk libxfce4windowing-0-0
 ~~~
 
 <details>
@@ -76,12 +76,13 @@ sudo zypper in git-core ninja meson glib2-tools python3-requests python3-gobject
  </summary>
  
 #### Runtime
-- budgie-1.0
+- budgie-1.0 or budgie-2.0
 - gtk+-3.0
 - python3 >= 3.9
 - python3-requests
 - python3-gobject
 - gsettings
+- libxfce4windowing-0.0
 #### Buildtime
 - meson
 - ninja
