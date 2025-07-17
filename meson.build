@@ -14,7 +14,7 @@ else
 	python_loader = 'python' 
 endif
 
-configdata= configuration_data()
+configdata = configuration_data()
 configdata.set('PYTHON', python_loader)
 plugininstall = configure_file(
     input: 'budgie-media-player-applet.plugin.in',
