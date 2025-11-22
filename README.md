@@ -72,7 +72,7 @@ sudo apt install git meson ninja-build python3-requests python3-gi libxfce4windo
 Fedora:
 
 ```shell
-sudo dnf install git meson ninja-build python3-requests python3-gobject libxfce4windowing
+sudo dnf install git meson ninja-build python3-requests python3-gobject libxfce4windowing libpeas-loader-python
 ```
 
 Arch Linux:

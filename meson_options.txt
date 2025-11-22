@@ -1,1 +1,2 @@
 option('for-wayland', type : 'boolean', value : false, description : 'Build only wayland compatible components')
+option('budgie-api-v2', type : 'boolean', value : false, description : 'Use the budgie-2.0 and budgie-3.0 python apis, required for budgie > 10.9.4')

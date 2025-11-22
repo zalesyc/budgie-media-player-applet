@@ -6,14 +6,16 @@
 import sys
 import gi.repository
 from BudgieMediaPlayer import BudgieMediaPlayer
+from BudgieApiVersions import BUDGIE_VERSION_X11, BUDGIE_VERSION_WAYLAND
 
 gi.require_version("Gtk", "3.0")
-gi.require_version('Libxfce4windowing', '0.0')
+gi.require_version("Libxfce4windowing", "0.0")
 from gi.repository import Libxfce4windowing
+
 if Libxfce4windowing.windowing_get() == Libxfce4windowing.Windowing.WAYLAND:
-    gi.require_version('Budgie', '2.0')
+    gi.require_version("Budgie", BUDGIE_VERSION_WAYLAND)
 else:
-    gi.require_version('Budgie', '1.0')
+    gi.require_version("Budgie", BUDGIE_VERSION_X11)
 gi.require_version("GLib", "2.0")
 
 from gi.repository import Gtk, GLib, Budgie
