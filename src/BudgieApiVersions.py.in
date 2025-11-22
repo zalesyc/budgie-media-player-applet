@@ -1,0 +1,5 @@
+# Copyright 2025, zalesyc and the budgie-media-player-applet contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+BUDGIE_VERSION_X11="@X11@"
+BUDGIE_VERSION_WAYLAND="3.0"

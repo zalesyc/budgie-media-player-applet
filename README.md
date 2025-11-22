@@ -72,7 +72,7 @@ sudo apt install git meson ninja-build python3-requests python3-gi libxfce4windo
 Fedora:
 
 ```shell
-sudo dnf install git meson ninja-build python3-requests python3-gobject libxfce4windowing
+sudo dnf install git meson ninja-build python3-requests python3-gobject libxfce4windowing libpeas-loader-python
 ```
 
 Arch Linux:
@@ -117,18 +117,19 @@ git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie
 
 #### 3. Build the applet
 
-note: _if you use budgie 10.10 (i.e. with wayland) set `-Dfor-wayland=true`_
+> [!IMPORTANT]
+> If you use budgie **10.9.4 or higher** set `-Dbudgie-api-v2=true`
 
 Ubuntu, Debian, Arch Linux
 
 ```shell
-meson setup build --libdir=/usr/lib --prefix=/usr -Dfor-wayland=false
+meson setup build --libdir=/usr/lib --prefix=/usr -Dbudgie-api-v2=false
 ```
 
 Fedora, openSUSE
 
 ```shell
-meson setup build --libdir=/usr/lib64 --prefix=/usr -Dfor-wayland=false
+meson setup build --libdir=/usr/lib64 --prefix=/usr -Dbudgie-api-v2=false
 ```
 
 #### 4. Install the applet
