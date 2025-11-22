@@ -1,7 +1,7 @@
 # Copyright 2023 - 2025, zalesyc and the budgie-media-player-applet contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from BudgieLibraryVersion import BUDGIE_VERSION_X11, BUDGIE_VERSION_WAYLAND
+from BudgieApiVersions import BUDGIE_VERSION_X11, BUDGIE_VERSION_WAYLAND
 import gi.repository
 
 gi.require_version("Libxfce4windowing", "0.0")
