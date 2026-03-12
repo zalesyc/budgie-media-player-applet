@@ -55,11 +55,10 @@ sudo apt update
 sudo apt install budgie-media-player-applet
 ```
 
-### Nixos
-
-see: [Nixos Packages](https://search.nixos.org/packages?show=budgiePlugins.budgie-media-player-applet)
-
 ## Install - Build from source
+> [!NOTE]
+> If you use `Budgie 10.10.X` make sure to have `pygobject >= 3.52` installed, othervise the applet will crash
+> [#27](https://github.com/zalesyc/budgie-media-player-applet/issues/27)
 
 #### 1. Install dependencies
 
@@ -95,13 +94,23 @@ sudo zypper in git-core ninja meson glib2-tools python3-requests python3-gobject
  </summary>
  
 #### Runtime
-- budgie-1.0 or budgie-2.0
 - gtk+-3.0
 - python3 >= 3.9
 - python3-requests
 - python3-gobject
 - gsettings
 - libxfce4windowing-0.0
+
+Budgie < 10.10.0
+- libpeas-1
+- pygobject < 3.52
+- budgie-1.0
+  
+Budgie >= 10.10.0
+- libpeas-1
+- pygobject-3 >= 3.52
+- budgie-2.0
+  
 #### Buildtime
 - meson
 - ninja
@@ -118,7 +127,7 @@ git clone https://github.com/zalesyc/budgie-media-player-applet.git && cd budgie
 #### 3. Build the applet
 
 > [!IMPORTANT]
-> If you use budgie **10.9.4 or higher** set `-Dbudgie-api-v2=true`
+> If you use budgie **10.9.4 or higher** set `-Dbudgie-api-v2=true`, otherwise set `-Dbudgie-api-v2=false` 
 
 Ubuntu, Debian, Arch Linux
 
@@ -129,7 +138,7 @@ meson setup build --libdir=/usr/lib --prefix=/usr -Dbudgie-api-v2=false
 Fedora, openSUSE
 
 ```shell
-meson setup build --libdir=/usr/lib64 --prefix=/usr -Dbudgie-api-v2=false
+meson setup build --libdir=/usr/lib64 --prefix=/usr -Dbudgie-api-v2=true
 ```
 
 #### 4. Install the applet
@@ -140,7 +149,7 @@ sudo ninja install -C build
 
 #### 5. Add the applet from Budgie Desktop Settings
 
-You may need to log out and back in, for the changes to show up
+You may need to log out and back in for the changes to show up
 
 ## Troubleshooting
 
